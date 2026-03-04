@@ -1,8 +1,9 @@
 data/
 Data_Science_Project_for_Startup_Roles.pdf
 text.txt
-neighbourpulse
+neighbourpulse/
 models/
+artifacts/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -162,6 +163,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+neighbourpulse/
 
 # Spyder project settings
 .spyderproject
