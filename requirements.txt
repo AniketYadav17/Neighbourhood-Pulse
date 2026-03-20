@@ -1,3 +1,4 @@
+python>=3.10
 pandas
 polars
 numpy
@@ -24,3 +25,4 @@ pyarrow
 fastparquet
 tqdm
 python-dotenv
+joblib
