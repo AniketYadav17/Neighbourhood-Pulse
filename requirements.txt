@@ -26,3 +26,4 @@ fastparquet
 tqdm
 python-dotenv
 joblib
+python-dateutil
