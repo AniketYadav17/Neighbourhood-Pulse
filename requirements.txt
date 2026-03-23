@@ -27,3 +27,4 @@ tqdm
 python-dotenv
 joblib
 python-dateutil
+pyython-dotenv
