@@ -1,4 +1,5 @@
 import os
+import time
 import requests
 import osmnx
 import pandas as pd
@@ -41,7 +42,12 @@ class DataIngestion:
             all_records = batch
             while batch:
                 logger.info(f"Fetching next batch of data for borough: {borough}...")
+                time.sleep(10)  # Sleep to respect API rate limits
                 post_scroll = self.s.post(SCROLL_API_URL, json={"scroll": SCROLL_DURATION, "scroll_id": scroll_id})
+                if post_scroll.status_code == 503:
+                    logger.warning("Received 503 status code. Retrying after a delay...")
+                    time.sleep(30)  # Wait before retrying
+                    continue
                 post_scroll.raise_for_status()
                 data_scroll = post_scroll.json()
                 scroll_id = data_scroll["_scroll_id"]
@@ -61,15 +67,28 @@ class DataIngestion:
 
     def run(self):
         logger.info("Starting data ingestion process...")
+        # idempotency check - if files already exist, read and return them
+        if os.path.exists(PLANNING_RAW_PATH) and os.path.exists(COFFEE_SHOPS_RAW_PATH):
+            logger.info("Raw data files already exist. Reading from disk...")
+            df1 = pd.read_parquet(PLANNING_RAW_PATH)
+            df2 = pd.read_parquet(COFFEE_SHOPS_RAW_PATH)
+            logger.info("Data ingestion process completed.")
+            return df1, df2
+        
         all_records = []
         for borough in TARGET_BOROUGHS:
             borough_records = self.fetch_planning_data(borough)
             all_records.extend(borough_records)
         df1 = pd.DataFrame([record["_source"] for record in all_records])
-        df2 = self.fetch_coffee_shop_data()
+        df1["centroid_northing"] = pd.to_numeric(df1["centroid_northing"], errors='coerce')
+        df1["centroid_easting"] = pd.to_numeric(df1["centroid_easting"], errors='coerce')
+        
 
+        df1 = df1.convert_dtypes()
         df1.to_parquet(PLANNING_RAW_PATH, index=False)
         logger.info(f"Planning data saved to {PLANNING_RAW_PATH}")
+        df2 = self.fetch_coffee_shop_data()
+        df2 = df2.convert_dtypes()
         df2.to_parquet(COFFEE_SHOPS_RAW_PATH, index=False)
         logger.info(f"Coffee shop data saved to {COFFEE_SHOPS_RAW_PATH}")
 
