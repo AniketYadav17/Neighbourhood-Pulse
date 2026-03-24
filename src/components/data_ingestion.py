@@ -12,7 +12,7 @@ class DataIngestion:
         logger.info("Initializing DataIngestion class...")
         self.s = requests.Session()
 
-    def fetch_planning_data(self, borough):
+    def fetch_planning_data(self, borough: str) -> list:
         try:
             logger.info(f"Fetching planning data for borough: {borough}...")
             query = {"query":
@@ -61,11 +61,11 @@ class DataIngestion:
             raise CustomException(e)
             
 
-    def fetch_coffee_shop_data(self):
+    def fetch_coffee_shop_data(self) -> pd.DataFrame:
         logger.info("Fetching coffee shop data...")
         return osmnx.features_from_place(OSMNX_PLACE_NAME, tags={"amenity": "cafe"})
 
-    def run(self):
+    def run(self) -> tuple[pd.DataFrame, pd.DataFrame]:
         logger.info("Starting data ingestion process...")
         # idempotency check - if files already exist, read and return them
         if os.path.exists(PLANNING_RAW_PATH) and os.path.exists(COFFEE_SHOPS_RAW_PATH):
@@ -79,19 +79,19 @@ class DataIngestion:
         for borough in TARGET_BOROUGHS:
             borough_records = self.fetch_planning_data(borough)
             all_records.extend(borough_records)
+
         df1 = pd.DataFrame([record["_source"] for record in all_records])
         df1["centroid_northing"] = pd.to_numeric(df1["centroid_northing"], errors='coerce')
         df1["centroid_easting"] = pd.to_numeric(df1["centroid_easting"], errors='coerce')
-        
-
         df1 = df1.convert_dtypes()
         df1.to_parquet(PLANNING_RAW_PATH, index=False)
         logger.info(f"Planning data saved to {PLANNING_RAW_PATH}")
+        
         df2 = self.fetch_coffee_shop_data()
         df2 = df2.convert_dtypes()
         df2.to_parquet(COFFEE_SHOPS_RAW_PATH, index=False)
         logger.info(f"Coffee shop data saved to {COFFEE_SHOPS_RAW_PATH}")
-
         logger.info("Data ingestion process completed.")
+
         return df1, df2
     

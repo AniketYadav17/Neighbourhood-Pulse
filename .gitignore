@@ -5,6 +5,7 @@ neighbourpulse/
 models/
 artifacts/
 logs/
+cache/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
