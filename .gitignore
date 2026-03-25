@@ -6,6 +6,7 @@ models/
 artifacts/
 logs/
 cache/
+src/components/data_ingestionV1.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

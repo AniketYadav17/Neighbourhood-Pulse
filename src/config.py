@@ -42,3 +42,8 @@ FIELDS_TO_RETURN = [
 OSMNX_PLACE_NAME = "Greater London, England, United Kingdom"
 PLANNING_RAW_PATH = "data/raw/planning_applications.parquet"
 COFFEE_SHOPS_RAW_PATH = "data/raw/coffee_shops.parquet"
+
+REQUEST_TIMEOUT = 30  # seconds
+MAX_RETRIES = 5
+RATE_LIMIT_DELAY = 10 # seconds
+RETRY_DELAY = 30      # seconds
