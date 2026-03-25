@@ -2,7 +2,7 @@
 ![Python](https://img.shields.io/badge/Python-3.10+-blue)
 ![Status](https://img.shields.io/badge/Status-In%20Progress-yellow)
 ![License](https://img.shields.io/badge/License-GPL--3.0-blue)
-![Data](https://img.shields.io/badge/Data-46k%2B%20Records-orange)
+![Data](https://img.shields.io/badge/Data-46k%2B%20Records-green)
 
 ### The Neighbourhood Pulse: A Spatiotemporal Gentrification Predictor for London.
 
@@ -10,7 +10,7 @@
 
 Gentrification is happening all around London, and the best time to invest in these properties was 6 months ago. 
 
-A major way gentrification is measured is by tracking the change in house prices. But, as silly as it sounds, economic indicators suggest the existence of pre-gentrification signals that can help us invest in properties early on. These are usually the areas flocked by young professionals who desire a safer space with low rental prices. An existing trend is the pop-up of independent cafes around these areas, which can act as an early indicator of gentrification. 
+A major way gentrification is measured by tracking the change in house prices. But, as silly as it sounds, economic indicators suggest the existence of pre-gentrification signals that can help us invest in properties early on. These are usually the areas flocked by young professionals who desire a safer space with low rental prices. An existing trend is the pop-up of independent cafes around these areas, which can act as an early indicator of gentrification. 
 Another worthy early signal, before the warehouses turn into flats, shops into restaurants and industrial units into creative studios, are the applications that are filed 12-24 months in advance before the actual change in geography.
 
 Using these data-points and Land Registry data as ground truth, a predictive model is built to quantify these signals and identify undervalued London neighbourhoods before price growth appears. 
