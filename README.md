@@ -1,8 +1,10 @@
 # Neighbourhood-Pulse
-![Python](https://img.shields.io/badge/Python-3.10-blue)
+![Python](https://img.shields.io/badge/Python-3.10+-blue)
 ![Status](https://img.shields.io/badge/Status-In%20Progress-yellow)
+![License](https://img.shields.io/badge/License-GPL--3.0-blue)
+![Data](https://img.shields.io/badge/Data-46k%2B%20Records-orange)
 
-The Neighbourhood Pulse: A Spatiotemporal Gentrification Predictor for London.
+### The Neighbourhood Pulse: A Spatiotemporal Gentrification Predictor for London.
 
 ## Why this matters?
 
@@ -17,26 +19,31 @@ This has direct applications in property investment, retail site selection, and 
 
 ## The Data
 
-1. [Planning London Datahub](https://planninglondondatahub.london.gov.uk) - Planning Data about use-of-change in property.
+### 1. Planning London Datahub
+[Planning London Datahub](https://planninglondondatahub.london.gov.uk) — Planning data 
+about change-of-use in property.
+- 46,000+ planning applications across three London boroughs
+- Pipeline designed to scale to all 33 boroughs (~2-3 million records)
 
-Scraped the Webpage to get Planning data - 46,000+ planning applications across three London boroughs 
-(pipeline designed to scale to all 33 boroughs, estimated 2-3 million records)
+### 2. OpenStreetMap via OSMnx
+[OSMnx](https://github.com/gboeing/osmnx) — Used to extract existing 
+cafe locations across Greater London.
+- 6,600+ independent coffee shops fetched
 
-2. [OSMnx OpenStreetmap Network](https://github.com/gboeing/osmnx) - a collaborative, volunteer-driven, open-source project that provides comprehensive, freely accessible global map data, including detailed road networks, buildings, and geographic features. 
-
-Used to extract the data of the existing cafes in and around Greater London.
-
-3. [Land Registry Data](https://landregistry.data.gov.uk/) - Public data about the 'Price Paid Data' used as Ground truth. 
+### 3. Land Registry Price Paid Data
+[Land Registry](https://landregistry.data.gov.uk/) — Public property 
+transaction data used as ground truth for price growth. 
 
 ## Tech Stack
 
-Python - Primary language
-Elasticsearch API - Reverse engineered the Planning London Datahub's internal API via Chrome DevTools to access 46,000+ planning records without a documented public API
-OSMnx - To interact with OSMnx OpenStreetmap Network API with python
-Parquet - Column-based file format. 100x faster to query compared to CSV. Machine-readable unlike CSV which is human readable
-Pandas — Data manipulation
-PyArrow — Parquet engine
-Requests - Used to send POST request to the APIs and parse JSON responses.
+| Tool | Purpose |
+|------|---------|
+| Python | Primary language |
+| Elasticsearch API | Reverse engineered internal API via Chrome DevTools |
+| OSMnx | OpenStreetMap interface for coffee shop data |
+| Pandas | Data manipulation and transformation |
+| Parquet / PyArrow | Column-based storage, 100x faster than CSV |
+| Requests | HTTP client for API calls |
 
 ## Project Structure 
 ```
