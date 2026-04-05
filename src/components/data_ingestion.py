@@ -3,7 +3,7 @@ import time
 import requests
 import osmnx
 import pandas as pd
-from typing import Tuple
+import geopandas as gpd
 
 from src.logger import logger
 from src.exceptions import CustomException
@@ -45,18 +45,27 @@ class DataIngestion:
             "_source": FIELDS_TO_RETURN,
             "size": PAGE_SIZE
         }
+    
+    def _post_with_retry(self, url: str, payload: dict) -> requests.Response:
+        retries = 0
+        while retries < MAX_RETRIES:
+            response = self.session.post(url, json=payload, timeout=REQUEST_TIMEOUT)
+            if response.status_code == 503:
+                logger.warning(f"503 received. Retrying ({retries + 1}/{MAX_RETRIES})...")
+                time.sleep(RETRY_DELAY)
+                retries += 1
+            else:
+                response.raise_for_status()
+                return response
+        logger.error("Max retries reached.")
+        raise CustomException("Max retries exceeded")
 
     def fetch_planning_data(self, borough: str) -> list:
         logger.info(f"Fetching planning data for borough: {borough}...")
         query = self._build_planning_query(borough)
         
         try:
-            response = self.session.post(
-                PLANNING_API_URL, 
-                json=query, 
-                timeout=REQUEST_TIMEOUT
-            )
-            response.raise_for_status()
+            response = self._post_with_retry(PLANNING_API_URL, query)
             data = response.json()
             
             scroll_id = data.get("_scroll_id")
@@ -65,32 +74,13 @@ class DataIngestion:
             
             # Explicitly cast to a new list to prevent reference bugs
             all_records = list(batch) 
-            retries = 0
             
             while batch:
                 logger.info(f"Fetching next batch for {borough}. Total so far: {len(all_records)}")
                 time.sleep(RATE_LIMIT_DELAY)
                 
                 scroll_payload = {"scroll": SCROLL_DURATION, "scroll_id": scroll_id}
-                scroll_response = self.session.post(
-                    SCROLL_API_URL, 
-                    json=scroll_payload, 
-                    timeout=REQUEST_TIMEOUT
-                )
-                
-                # Robust retry logic with a hard limit
-                if scroll_response.status_code == 503:
-                    if retries < MAX_RETRIES:
-                        logger.warning(f"503 received. Retrying in {RETRY_DELAY}s (Attempt {retries + 1}/{MAX_RETRIES})...")
-                        time.sleep(RETRY_DELAY)
-                        retries += 1
-                        continue
-                    else:
-                        logger.error("Max retries reached for 503 errors. Aborting scroll for this borough.")
-                        break
-                
-                scroll_response.raise_for_status()
-                retries = 0  # Reset retries on successful call
+                scroll_response = self._post_with_retry(SCROLL_API_URL, scroll_payload)
                 
                 data_scroll = scroll_response.json()
                 scroll_id = data_scroll.get("_scroll_id")
@@ -131,12 +121,13 @@ class DataIngestion:
 
     def _process_and_save_coffee_data(self, coffee_df: pd.DataFrame) -> pd.DataFrame:
         """Isolates DataFrame transformation and saving logic."""
-        coffee_df = coffee_df.convert_dtypes()
-        coffee_df.to_parquet(COFFEE_SHOPS_RAW_PATH, index=False)
+        # coffee_df = coffee_df.convert_dtypes()
+        coffee_df = gpd.GeoDataFrame(coffee_df)
+        coffee_df.to_parquet(COFFEE_SHOPS_RAW_PATH)
         logger.info(f"Coffee shop data saved to {COFFEE_SHOPS_RAW_PATH}")
         return coffee_df
 
-    def run(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    def run(self) -> tuple[pd.DataFrame, pd.DataFrame]:
         logger.info("Starting data ingestion process...")
         
         # 1. Independent Idempotency Check for Planning Data
@@ -153,7 +144,7 @@ class DataIngestion:
         # 2. Independent Idempotency Check for Coffee Shop Data
         if os.path.exists(COFFEE_SHOPS_RAW_PATH):
             logger.info(f"Found existing coffee shop data. Loading from {COFFEE_SHOPS_RAW_PATH}.")
-            coffee_shops_df = pd.read_parquet(COFFEE_SHOPS_RAW_PATH)
+            coffee_shops_df = gpd.read_parquet(COFFEE_SHOPS_RAW_PATH)
         else:
             raw_coffee_df = self.fetch_coffee_shop_data()
             coffee_shops_df = self._process_and_save_coffee_data(raw_coffee_df)
