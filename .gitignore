@@ -7,6 +7,7 @@ artifacts/
 logs/
 cache/
 src/components/data_ingestionV1.py
+Project_Report/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

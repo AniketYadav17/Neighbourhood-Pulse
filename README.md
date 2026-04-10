@@ -15,7 +15,7 @@ Another worthy early signal, before the warehouses turn into flats, shops into r
 
 Using these data-points and Land Registry data as ground truth, a predictive model is built to quantify these signals and identify undervalued London neighbourhoods before price growth appears. 
 
-This has direct applications in property investment, retail site selection, and mortgage risk assessment.
+This has direct applications in property investment, retail site selection, and mortgage risk assessment. Equally, it provides critical foresight for city planning and transportation, allowing authorities to proactively adapt transit routes, allocate resources, and update public infrastructure ahead of rapid demographic shifts.
 
 ## The Data
 

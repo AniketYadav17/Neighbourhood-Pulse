@@ -47,3 +47,7 @@ REQUEST_TIMEOUT = 30  # seconds
 MAX_RETRIES = 5
 RATE_LIMIT_DELAY = 10 # seconds
 RETRY_DELAY = 30      # seconds
+
+H3_RESOLUTION = 8
+PLANNING_PROCESSED_PATH = "data/processed/planning_processed.parquet"
+COFFEE_SHOPS_PROCESSED_PATH = "data/processed/coffee_shops_processed.parquet"
