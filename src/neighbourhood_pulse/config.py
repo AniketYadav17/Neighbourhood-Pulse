@@ -4,11 +4,14 @@ Values with non-obvious provenance carry comments; borough names must match
 the API's `lpa_name.raw` values exactly (verified via the aggregation query
 recorded in notebooks/01_eda.ipynb section 7).
 """
+
 import datetime
 
 from dateutil.relativedelta import relativedelta
 
-PLANNING_API_URL = "https://planninglondondatahub.london.gov.uk/api-guest/applications/_search?scroll=1m"
+PLANNING_API_URL = (
+    "https://planninglondondatahub.london.gov.uk/api-guest/applications/_search?scroll=1m"
+)
 SCROLL_API_URL = "https://planninglondondatahub.london.gov.uk/api-guest/_search/scroll"
 SCROLL_DURATION = "1m"
 PAGE_SIZE = 10000
@@ -49,10 +52,10 @@ TARGET_BOROUGHS = [
     "Tower Hamlets",
     "Waltham Forest",
     "Wandsworth",
-    "Westminster"
+    "Westminster",
 ]
 END_DATE = datetime.date.today()
-START_DATE = END_DATE-relativedelta(years=5)
+START_DATE = END_DATE - relativedelta(years=5)
 FIELDS_TO_RETURN = [
     "id",
     "lpa_name",
@@ -80,7 +83,7 @@ FIELDS_TO_RETURN = [
     "centroid_northing",
     "ward",
     "last_updated",
-    "last_synced"
+    "last_synced",
 ]
 OSMNX_PLACE_NAME = "Greater London, England, United Kingdom"
 # Per-borough parquet files are written here for resumable ingestion;
@@ -91,17 +94,26 @@ COFFEE_SHOPS_RAW_PATH = "data/raw/coffee_shops.parquet"
 
 REQUEST_TIMEOUT = 30  # seconds
 MAX_RETRIES = 5
-RATE_LIMIT_DELAY = 10 # seconds, between scroll batches within a borough
-RETRY_DELAY = 30      # seconds, fallback backoff on 429/503 (when no Retry-After)
-BOROUGH_DELAY = 5     # seconds, courtesy pause between boroughs
+RATE_LIMIT_DELAY = 10  # seconds, between scroll batches within a borough
+RETRY_DELAY = 30  # seconds, fallback backoff on 429/503 (when no Retry-After)
+BOROUGH_DELAY = 5  # seconds, courtesy pause between boroughs
 USER_AGENT = "Neighbourhood-Pulse/0.1 (research project)"
 
 H3_RESOLUTION = 8
 PLANNING_PROCESSED_PATH = "data/processed/planning_processed.parquet"
 COFFEE_SHOPS_PROCESSED_PATH = "data/processed/coffee_shops_processed.parquet"
 
-CHAIN_BRANDS = ['Costa', 'Starbucks', 'Caffè Nero', 'Joe & The Juice',
-                'Wild Bean Cafe', 'Morrisons', 'Asda', 'T4', 'Mooboo']
+CHAIN_BRANDS = [
+    "Costa",
+    "Starbucks",
+    "Caffè Nero",
+    "Joe & The Juice",
+    "Wild Bean Cafe",
+    "Morrisons",
+    "Asda",
+    "T4",
+    "Mooboo",
+]
 
 # --- Feature engineering: reporting-lag trim ---
 # Planning records appear with an ingestion lag, so the most recent month(s) are

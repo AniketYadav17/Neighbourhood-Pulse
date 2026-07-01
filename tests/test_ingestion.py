@@ -1,4 +1,5 @@
 """Characterization tests for ingestion. No real network: session.post is stubbed."""
+
 import geopandas as gpd
 import pandas as pd
 import pytest
@@ -58,10 +59,14 @@ def seed_coffee_file(tmp_path):
 class TestPostWithRetry:
     def test_429_honours_retry_after_then_succeeds(self, tmp_path, monkeypatch, no_sleep):
         di = make_ingestion(tmp_path)
-        queue_responses(monkeypatch, di, [
-            FakeResponse(429, headers={"Retry-After": "7"}),
-            FakeResponse(200, json_data={"ok": True}),
-        ])
+        queue_responses(
+            monkeypatch,
+            di,
+            [
+                FakeResponse(429, headers={"Retry-After": "7"}),
+                FakeResponse(200, json_data={"ok": True}),
+            ],
+        )
         assert di._post_with_retry("http://x", {}).json() == {"ok": True}
         assert no_sleep == [7]  # server hint used, not RETRY_DELAY
 
@@ -73,10 +78,14 @@ class TestPostWithRetry:
 
     def test_http_date_retry_after_falls_back(self, tmp_path, monkeypatch, no_sleep):
         di = make_ingestion(tmp_path)
-        queue_responses(monkeypatch, di, [
-            FakeResponse(429, headers={"Retry-After": "Wed, 21 Oct 2026 07:28:00 GMT"}),
-            FakeResponse(200),
-        ])
+        queue_responses(
+            monkeypatch,
+            di,
+            [
+                FakeResponse(429, headers={"Retry-After": "Wed, 21 Oct 2026 07:28:00 GMT"}),
+                FakeResponse(200),
+            ],
+        )
         di._post_with_retry("http://x", {})
         assert no_sleep == [ing.RETRY_DELAY]
 
@@ -97,12 +106,21 @@ class TestPostWithRetry:
 class TestFetchPlanningData:
     def test_scroll_pagination_accumulates_all_batches(self, tmp_path, monkeypatch, no_sleep):
         di = make_ingestion(tmp_path)
-        queue_responses(monkeypatch, di, [
-            FakeResponse(200, {"_scroll_id": "s1",
-                               "hits": {"hits": [{"_source": {"id": 1}}, {"_source": {"id": 2}}]}}),
-            FakeResponse(200, {"_scroll_id": "s2", "hits": {"hits": [{"_source": {"id": 3}}]}}),
-            FakeResponse(200, {"_scroll_id": "s3", "hits": {"hits": []}}),
-        ])
+        queue_responses(
+            monkeypatch,
+            di,
+            [
+                FakeResponse(
+                    200,
+                    {
+                        "_scroll_id": "s1",
+                        "hits": {"hits": [{"_source": {"id": 1}}, {"_source": {"id": 2}}]},
+                    },
+                ),
+                FakeResponse(200, {"_scroll_id": "s2", "hits": {"hits": [{"_source": {"id": 3}}]}}),
+                FakeResponse(200, {"_scroll_id": "s3", "hits": {"hits": []}}),
+            ],
+        )
         records = di.fetch_planning_data("Testborough")
         assert [r["_source"]["id"] for r in records] == [1, 2, 3]
 
@@ -133,8 +151,10 @@ def test_borough_slug(borough, slug):
 
 PLANNING_RECORD = {
     "_source": {
-        "id": "A1", "lpa_name": "Full",
-        "centroid_easting": "530000", "centroid_northing": "180000",
+        "id": "A1",
+        "lpa_name": "Full",
+        "centroid_easting": "530000",
+        "centroid_northing": "180000",
     }
 }
 
@@ -144,7 +164,8 @@ class TestRun:
         seed_coffee_file(tmp_path)
         di = make_ingestion(tmp_path, boroughs=["Full", "Empty"])
         monkeypatch.setattr(
-            di, "fetch_planning_data",
+            di,
+            "fetch_planning_data",
             lambda b: [PLANNING_RECORD] if b == "Full" else [],
         )
         planning, coffee = di.run()

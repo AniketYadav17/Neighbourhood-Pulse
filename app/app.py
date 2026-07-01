@@ -6,6 +6,7 @@ gap map and the most-undervalued table, and frames the result honestly. No model
 training, no recomputation — the data science lives in the notebook; this is the
 viewer a recruiter clicks.
 """
+
 from pathlib import Path
 
 import branca.colormap as cm
@@ -32,7 +33,9 @@ def render_map_html() -> str:
     gap = load_gap()
     q = float(gap["valuation_gap"].abs().quantile(0.90))  # symmetric diverging scale
     cmap = cm.LinearColormap(
-        ["#d73027", "#ffffbf", "#1a9850"], vmin=-q, vmax=q,
+        ["#d73027", "#ffffbf", "#1a9850"],
+        vmin=-q,
+        vmax=q,
         caption="valuation gap   (red = undervalued, green = overvalued)",
     )
     m = folium.Map(location=[51.51, -0.10], zoom_start=10, tiles="cartodbpositron")
@@ -40,9 +43,15 @@ def render_map_html() -> str:
         v = max(-q, min(q, r.valuation_gap))
         boundary = [list(p) for p in h3.cell_to_boundary(r.h3_index)]
         folium.Polygon(
-            locations=boundary, weight=0, fill=True, fill_color=cmap(v), fill_opacity=0.65,
-            tooltip=(f"{r.borough}: gap {r.valuation_gap * 100:.0f}%  |  "
-                     f"actual £{r.median_price:,.0f}  |  predicted £{r.pred_price:,.0f}"),
+            locations=boundary,
+            weight=0,
+            fill=True,
+            fill_color=cmap(v),
+            fill_opacity=0.65,
+            tooltip=(
+                f"{r.borough}: gap {r.valuation_gap * 100:.0f}%  |  "
+                f"actual £{r.median_price:,.0f}  |  predicted £{r.pred_price:,.0f}"
+            ),
         ).add_to(m)
     m.add_child(cmap)
     return m.get_root().render()
@@ -68,24 +77,26 @@ with left:
 
 with right:
     st.subheader("Most undervalued neighbourhoods")
-    top = (
-        gap.nsmallest(15, "valuation_gap")[["borough", "median_price", "pred_price", "valuation_gap"]]
-        .reset_index(drop=True)
-    )
+    top = gap.nsmallest(15, "valuation_gap")[
+        ["borough", "median_price", "pred_price", "valuation_gap"]
+    ].reset_index(drop=True)
     top["valuation_gap"] = (top["valuation_gap"] * 100).round(1)
     st.dataframe(
-        top.rename(columns={
-            "borough": "Borough",
-            "median_price": "Actual median £",
-            "pred_price": "Predicted £",
-            "valuation_gap": "Gap %",
-        }),
+        top.rename(
+            columns={
+                "borough": "Borough",
+                "median_price": "Actual median £",
+                "pred_price": "Predicted £",
+                "valuation_gap": "Gap %",
+            }
+        ),
         column_config={
             "Actual median £": st.column_config.NumberColumn(format="£%d"),
             "Predicted £": st.column_config.NumberColumn(format="£%d"),
             "Gap %": st.column_config.NumberColumn(format="%.1f%%"),
         },
-        hide_index=True, use_container_width=True,
+        hide_index=True,
+        use_container_width=True,
     )
     st.caption(f"Modelled on {len(gap):,} hexagons with ≥30 pooled sales (2021–2025).")
 

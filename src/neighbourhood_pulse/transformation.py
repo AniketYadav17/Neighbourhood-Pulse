@@ -5,6 +5,7 @@ WGS84, filters records whose coordinates fall outside the valid BNG range
 (~20% of raw records store a different CRS — see notebook section 2), and
 assigns each record its H3 res-8 hexagon.
 """
+
 import logging
 import os
 
@@ -69,8 +70,14 @@ class DataTransformation:
     def transform_coffee_data(self, gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
         updated_data = gdf[
             [
-                "geometry", "name", "brand", "cuisine",
-                "opening_hours", "start_date", "addr:postcode", "operator",
+                "geometry",
+                "name",
+                "brand",
+                "cuisine",
+                "opening_hours",
+                "start_date",
+                "addr:postcode",
+                "operator",
             ]
         ].copy()
 

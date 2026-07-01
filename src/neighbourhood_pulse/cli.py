@@ -1,4 +1,5 @@
 """Command-line entry point: `pulse <stage>`."""
+
 import argparse
 import logging
 import sys

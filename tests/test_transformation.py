@@ -1,4 +1,5 @@
 """Characterization tests for coordinate cleaning and H3 indexing."""
+
 import geopandas as gpd
 import h3
 import pandas as pd

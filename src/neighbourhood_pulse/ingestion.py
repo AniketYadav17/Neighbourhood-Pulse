@@ -6,6 +6,7 @@ OpenStreetMap via OSMnx. Resumable by design: each borough is saved to its
 own parquet as it completes, so a crash loses only the in-flight borough and
 a re-run skips everything already on disk.
 """
+
 import glob
 import logging
 import os
@@ -107,7 +108,10 @@ class DataIngestion:
                     wait = RETRY_DELAY
                 logger.warning(
                     "%s received. Backing off %ss and retrying (%s/%s)...",
-                    response.status_code, wait, retries + 1, MAX_RETRIES,
+                    response.status_code,
+                    wait,
+                    retries + 1,
+                    MAX_RETRIES,
                 )
                 time.sleep(wait)
                 retries += 1
@@ -209,9 +213,7 @@ class DataIngestion:
             if not borough_files:
                 raise IngestionError("No per-borough planning files found to combine.")
             logger.info("Combining %s borough files.", len(borough_files))
-            planning_df = pd.concat(
-                (pd.read_parquet(f) for f in borough_files), ignore_index=True
-            )
+            planning_df = pd.concat((pd.read_parquet(f) for f in borough_files), ignore_index=True)
             os.makedirs(os.path.dirname(self.combined_path) or ".", exist_ok=True)
             planning_df.to_parquet(self.combined_path, index=False)
             logger.info("Combined planning data saved (%s records).", len(planning_df))
