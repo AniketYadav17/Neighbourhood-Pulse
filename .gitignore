@@ -1,4 +1,10 @@
-data/
+# Ignore data/ contents, but commit the one small derived artifact the app needs.
+# (git can't re-include a file if its parent dir is wholly excluded, so we
+#  exclude contents and re-include the dirs + the single file.)
+data/*
+!data/processed/
+data/processed/*
+!data/processed/hex_valuation_gap.parquet
 Data_Science_Project_for_Startup_Roles.pdf
 text.txt
 neighbourpulse/
@@ -8,6 +14,16 @@ logs/
 cache/
 src/components/data_ingestionV1.py
 Project_Report/
+src/config_m.py
+
+# Private working documents — study material and internal plans, never published.
+PROJECT_REPORT.md
+docs/interview/
+docs/superpowers/
+.superpowers/
+
+# Regenerable research map exports — large folium HTML, kept local only.
+notebooks/*.html
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
