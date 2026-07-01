@@ -54,29 +54,21 @@ neighbourhood-pulse/
 │
 ├── data/
 │   ├── raw/                    ← Raw fetched data (not tracked by Git)
-│   └── processed/              ← Transformed data ready for modelling
+│   └── processed/              ← Processed data + the committed valuation-gap artifact
 │
 ├── notebooks/
-│   └── 01_eda.ipynb            ← Exploratory data analysis
+│   └── 01_eda.ipynb            ← Frozen research record (EDA → features → model → back-test)
 │
 ├── src/
-│   ├── components/
-│   │   ├── data_ingestion.py   ← Fetches planning and coffee shop data
-│   │   ├── data_transformation.py  ← H3 indexing and feature engineering
-│   │   └── model_trainer.py    ← XGBoost model training
-│   ├── pipelines/
-│   │   ├── train_pipeline.py   ← Orchestrates full training pipeline
-│   │   └── predict_pipeline.py ← Serves predictions to the app
-│   ├── config.py               ← All constants and configuration
-│   ├── exceptions.py           ← Custom exception handling
-│   ├── logger.py               ← Timestamped logging setup
-│   └── utils.py                ← Shared utilities (save/load objects)
+│   └── neighbourhood_pulse/    ← Installable package
+│       ├── config.py           ← All constants and configuration
+│       ├── ingestion.py        ← Resumable planning + café data acquisition
+│       ├── transformation.py   ← BNG→WGS84 conversion and H3 indexing
+│       └── cli.py              ← `pulse` command-line entry point
 │
-├── artifacts/                  ← Trained models and encoders (not tracked by Git)
-├── main.py                     ← Pipeline entry point
-├── Dockerfile                  ← Container setup (in progress)
-├── pyproject.toml              ← Package installation configuration
-├── requirements.txt            ← Python dependencies
+├── tests/                      ← Characterization tests (mocked HTTP, no network)
+├── .github/workflows/ci.yml    ← Lint + tests on every push
+├── pyproject.toml              ← Package metadata, dependencies, tooling config
 └── CITATIONS.md                ← Data source attributions
 ```
 
@@ -85,21 +77,21 @@ neighbourhood-pulse/
 1. Clone the repository
 ```bash
 git clone https://github.com/AniketYadav17/Neighbourhood-Pulse.git
-cd neighbourhood-pulse
+cd Neighbourhood-Pulse
 ```
 
-2. Install dependencies
+2. Install (Python 3.10+)
 ```bash
-pip install -r requirements.txt
 pip install -e .
 ```
 
-3. Run data ingestion
+3. Run the data pipeline (fetches ~490k planning records; resumable, takes a while)
 ```bash
-python main.py
+pulse ingest
+pulse transform
 ```
 
-4. Launch the app (coming soon)
+4. Launch the app
 ```bash
 streamlit run app/app.py
 ```
