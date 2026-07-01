@@ -105,7 +105,8 @@ streamlit run app/app.py
 ```
 
 ## Results  
-Coming Soon
+![Planning Application Hotspots](notebooks/images/hotspot_map.png)
+*Top 20 most active H3 hexagons across Newham, Redbridge and Waltham Forest*
 
 ## Limitations and Future Work
 
