@@ -1,4 +1,11 @@
+"""All constants and configuration.
+
+Values with non-obvious provenance carry comments; borough names must match
+the API's `lpa_name.raw` values exactly (verified via the aggregation query
+recorded in notebooks/01_eda.ipynb section 7).
+"""
 import datetime
+
 from dateutil.relativedelta import relativedelta
 
 PLANNING_API_URL = "https://planninglondondatahub.london.gov.uk/api-guest/applications/_search?scroll=1m"

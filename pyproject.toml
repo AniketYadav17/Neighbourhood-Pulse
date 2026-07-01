@@ -1,14 +1,50 @@
 [build-system]
-requires = ["setuptools"]
+requires = ["setuptools>=69"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "neighbourhood-pulse"
-version = "0.1.0"
-description = "Spatiotemporal gentrification predictor for London"
-requires-python = ">=3.8"
+version = "1.0.0"
+description = "Spatiotemporal gentrification / valuation-gap model for London"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+dependencies = [
+    "pandas>=2.0,<3",
+    "geopandas>=0.14,<2",
+    "pyarrow>=15",
+    "h3>=4.0,<5",
+    "pyproj>=3.6",
+    "shapely>=2.0",
+    "osmnx>=1.9,<3",
+    "requests>=2.31",
+    "python-dateutil>=2.8",
+    # Current Streamlit viewer; folium/branca are replaced by pydeck in Phase C.
+    "streamlit>=1.32",
+    "folium>=0.15",
+    "branca>=0.7",
+]
 
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "ruff>=0.5",
+]
+
+[project.scripts]
+pulse = "neighbourhood_pulse.cli:main"
 
 [tool.setuptools.packages.find]
-where = ["."]
-include = ["src*"]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+extend-exclude = ["notebooks", "neighbourpulse"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
