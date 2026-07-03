@@ -9,6 +9,8 @@ import datetime
 
 from dateutil.relativedelta import relativedelta
 
+from neighbourhood_pulse import __version__
+
 PLANNING_API_URL = (
     "https://planninglondondatahub.london.gov.uk/api-guest/applications/_search?scroll=1m"
 )
@@ -97,7 +99,7 @@ MAX_RETRIES = 5
 RATE_LIMIT_DELAY = 10  # seconds, between scroll batches within a borough
 RETRY_DELAY = 30  # seconds, fallback backoff on 429/503 (when no Retry-After)
 BOROUGH_DELAY = 5  # seconds, courtesy pause between boroughs
-USER_AGENT = "Neighbourhood-Pulse/0.1 (research project)"
+USER_AGENT = f"Neighbourhood-Pulse/{__version__} (research project)"
 
 H3_RESOLUTION = 8
 PLANNING_PROCESSED_PATH = "data/processed/planning_processed.parquet"

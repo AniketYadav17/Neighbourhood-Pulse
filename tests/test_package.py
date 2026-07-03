@@ -28,3 +28,13 @@ def test_feature_cols_and_paths_consistent():
     assert config.FEATURE_COLS[-1] == "dist_to_centre_km"
     assert config.VALUATION_GAP_PATH.startswith(config.ARTIFACTS_DIR)
     assert set(config.NAME_FIX) == {"KINGSTON", "RICHMOND", "WESTMINSTER"}
+
+
+def test_version_is_single_sourced():
+    from importlib.metadata import version
+
+    import neighbourhood_pulse
+    from neighbourhood_pulse import config
+
+    assert version("neighbourhood-pulse") == neighbourhood_pulse.__version__
+    assert neighbourhood_pulse.__version__ in config.USER_AGENT
