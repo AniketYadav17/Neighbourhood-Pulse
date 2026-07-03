@@ -17,7 +17,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 
 REPO = Path(__file__).resolve().parent.parent
-GAP_PATH = REPO / "data" / "processed" / "hex_valuation_gap.parquet"
+GAP_PATH = REPO / "artifacts" / "hex_valuation_gap.parquet"
 
 st.set_page_config(page_title="Neighbourhood Pulse", page_icon="🏙️", layout="wide")
 

@@ -1,12 +1,10 @@
-# Ignore data/ contents, but commit the one small derived artifact the app needs.
-# (git can't re-include a file if its parent dir is wholly excluded, so we
-#  exclude contents and re-include the dirs + the single file.)
-data/*
-!data/processed/
-data/processed/*
-!data/processed/hex_valuation_gap.parquet
+# Raw + intermediate data stays local; serving artifacts are re-included below.
+data/
 neighbourpulse/
-artifacts/
+artifacts/*
+!artifacts/hex_valuation_gap.parquet
+!artifacts/metrics.json
+!artifacts/model.joblib
 logs/
 
 # Regenerable research map exports — large folium HTML, kept local only.
