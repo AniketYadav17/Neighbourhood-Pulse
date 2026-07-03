@@ -122,3 +122,14 @@ def test_run_train_is_idempotent_and_force_rebuilds(synthetic_world):
     assert gap_path.stat().st_mtime_ns == first_mtime
     run_train(force=True)  # force: rebuild everything
     assert gap_path.stat().st_mtime_ns > first_mtime
+
+
+def test_missing_intermediate_cascades_to_retrain(synthetic_world):
+    run_train()
+    gap_path = synthetic_world / "artifacts" / "hex_valuation_gap.parquet"
+    first = gap_path.stat().st_mtime_ns
+    # A rebuilt upstream stage must cascade: artifacts exist, but stage 4 rerunning
+    # means stage 5 must rerun too (the fresh-clone coherence guarantee).
+    (synthetic_world / "data" / "processed" / "hex_training.parquet").unlink()
+    run_train()
+    assert gap_path.stat().st_mtime_ns > first

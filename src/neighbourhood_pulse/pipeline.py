@@ -61,8 +61,11 @@ def _ensure_dir(path: str) -> None:
 
 def run_train(force: bool = False) -> dict:
     """Build every stage from processed data to committed-artifact candidates."""
+    ran = False
+
     # Stage 1: hexagon feature matrix
-    if _fresh(HEX_FEATURES_PATH, force):
+    if ran or _fresh(HEX_FEATURES_PATH, force):
+        ran = True
         planning = load_planning(PLANNING_PROCESSED_PATH)
         frames = compute_borough_frames(planning)
         hex_borough = assign_hex_borough(planning)
@@ -74,13 +77,15 @@ def run_train(force: bool = False) -> dict:
         logger.info("Feature matrix: %s hexagons.", len(hex_features))
 
     # Stage 2: pooled London sales
-    if _fresh(LR_SALES_PATH, force):
+    if ran or _fresh(LR_SALES_PATH, force):
+        ran = True
         sales = load_sales(LR_RAW_DIR, LR_YEARS)
         _ensure_dir(LR_SALES_PATH)
         sales.to_parquet(LR_SALES_PATH, index=False)
 
     # Stage 3: per-hexagon price target
-    if _fresh(HEX_PRICE_TARGET_PATH, force):
+    if ran or _fresh(HEX_PRICE_TARGET_PATH, force):
+        ran = True
         sales = pd.read_parquet(LR_SALES_PATH)
         lookup = build_postcode_lookup(PLANNING_PROCESSED_PATH, COFFEE_SHOPS_PROCESSED_PATH)
         target = build_price_target(sales, lookup)
@@ -88,7 +93,8 @@ def run_train(force: bool = False) -> dict:
         target.to_parquet(HEX_PRICE_TARGET_PATH, index=False)
 
     # Stage 4: training table (features x target at the sales floor)
-    if _fresh(HEX_TRAINING_PATH, force):
+    if ran or _fresh(HEX_TRAINING_PATH, force):
+        ran = True
         features = pd.read_parquet(HEX_FEATURES_PATH)
         target = pd.read_parquet(HEX_PRICE_TARGET_PATH)
         target = target[target["sales_count"] >= MIN_SALES_PER_HEX]
@@ -100,10 +106,12 @@ def run_train(force: bool = False) -> dict:
 
     # Stage 5: model + gap + back-test -> artifacts
     if (
-        _fresh(VALUATION_GAP_PATH, force)
+        ran
+        or _fresh(VALUATION_GAP_PATH, force)
         or _fresh(METRICS_PATH, force)
         or _fresh(MODEL_PATH, force)
     ):
+        ran = True
         train = pd.read_parquet(HEX_TRAINING_PATH)
         metrics = train_and_evaluate(train)
         gap_df = compute_valuation_gap(train)

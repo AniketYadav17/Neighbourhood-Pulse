@@ -28,6 +28,9 @@ from neighbourhood_pulse.config import (
     CX_LAT,
     CX_LON,
     FEATURE_COLS,
+    METRICS_PATH,
+    MODEL_PATH,
+    VALUATION_GAP_PATH,
 )
 from neighbourhood_pulse.target import normalise_postcodes
 
@@ -146,9 +149,13 @@ def save_artifacts(
     gap_df: pd.DataFrame, metrics: dict, model: XGBRegressor, artifacts_dir: str = ARTIFACTS_DIR
 ) -> None:
     os.makedirs(artifacts_dir, exist_ok=True)
-    gap_df.to_parquet(os.path.join(artifacts_dir, "hex_valuation_gap.parquet"), index=False)
-    joblib.dump(model, os.path.join(artifacts_dir, "model.joblib"))
+    gap_df.to_parquet(
+        os.path.join(artifacts_dir, os.path.basename(VALUATION_GAP_PATH)), index=False
+    )
+    joblib.dump(model, os.path.join(artifacts_dir, os.path.basename(MODEL_PATH)))
     payload = {**metrics, "n_hexagons": int(len(gap_df)), "feature_cols": FEATURE_COLS}
-    with open(os.path.join(artifacts_dir, "metrics.json"), "w", encoding="utf-8") as f:
+    with open(
+        os.path.join(artifacts_dir, os.path.basename(METRICS_PATH)), "w", encoding="utf-8"
+    ) as f:
         json.dump(payload, f, indent=2)
     logger.info("Artifacts saved to %s/.", artifacts_dir)

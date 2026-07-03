@@ -60,8 +60,9 @@ def compute_borough_frames(planning: pd.DataFrame) -> pd.DataFrame:
                 below,
                 MAX_LAG_MONTHS,
             )
-        # Guard len-1: a degenerate single-month series must keep its only month.
-        # (Never fires on real data; notebook had no such borough.)
+        # Defence-in-depth: provably unreachable — the maximum month can never be
+        # below 0.75 x median, so the walk-back always stops before consuming the
+        # whole series. Kept so a pathological series can't index out of range.
         trim_n = min(below, MAX_LAG_MONTHS, len(monthly) - 1)
         anchor = monthly.index[-(trim_n + 1)]
         span_years = (anchor - sub["valid_date"].min()).days / 365.25
