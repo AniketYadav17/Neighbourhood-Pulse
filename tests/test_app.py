@@ -78,3 +78,13 @@ def test_app_smoke_explore():
     at = AppTest.from_file("app/app.py", default_timeout=60)
     at.run()
     assert not at.exception
+
+
+def test_app_smoke_model_and_methodology_pages():
+    from streamlit.testing.v1 import AppTest
+
+    for page in ("views/model.py", "views/methodology.py"):
+        at = AppTest.from_file("app/app.py", default_timeout=60)
+        at.switch_page(page)
+        at.run()
+        assert not at.exception, page
