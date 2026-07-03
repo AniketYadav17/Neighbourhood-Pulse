@@ -1,0 +1,13 @@
+.git
+.github
+.pytest_cache
+.ruff_cache
+__pycache__
+*.pyc
+data/
+neighbourpulse/
+notebooks/
+docs/
+tests/
+logs/
+PROJECT_REPORT.md

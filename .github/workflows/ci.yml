@@ -24,3 +24,12 @@ jobs:
           ruff format --check .
       - name: Test
         run: pytest
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t neighbourhood-pulse .
+      - name: Smoke-test API factory inside the image
+        run: docker run --rm neighbourhood-pulse python -c "from neighbourhood_pulse.api import create_app; app = create_app(); print(app.title)"
