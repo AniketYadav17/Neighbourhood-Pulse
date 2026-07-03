@@ -17,6 +17,7 @@ from neighbourhood_pulse.config import (
     CHAIN_BRANDS,
     LAG_TRIM_FRACTION,
     MAX_LAG_MONTHS,
+    PLANNING_MAX_DROP_FRACTION,
     RECENT_WINDOW_MONTHS,
 )
 
@@ -25,14 +26,26 @@ logger = logging.getLogger(__name__)
 PLANNING_COLUMNS = ["h3_index", "lpa_name", "description", "valid_date"]
 
 
-def load_planning(path: str) -> pd.DataFrame:
-    """Load processed planning records; parse day-first dates; drop unusable rows."""
+def load_planning(path: str, max_drop_fraction: float = PLANNING_MAX_DROP_FRACTION) -> pd.DataFrame:
+    """Load processed planning records; parse day-first dates; drop unusable rows.
+
+    Raises ValueError if more than max_drop_fraction of rows would drop — a
+    mass drop means the input is malformed, not merely noisy.
+    """
     df = pd.read_parquet(path, columns=PLANNING_COLUMNS)
     df["valid_date"] = pd.to_datetime(df["valid_date"], format="%d/%m/%Y", errors="coerce")
-    n_bad = int(df["valid_date"].isna().sum() + df["h3_index"].isna().sum())
+    bad = df["valid_date"].isna() | df["h3_index"].isna()
+    n_bad = int(bad.sum())
     if n_bad:
+        fraction = n_bad / len(df)
+        if fraction > max_drop_fraction:
+            raise ValueError(
+                f"{n_bad} of {len(df)} planning rows ({fraction:.1%}) would be dropped "
+                f"(unparseable date or null h3_index) — above the {max_drop_fraction:.0%} "
+                "guard; the input file looks malformed."
+            )
         logger.info("Dropping %s rows with unparseable dates or null h3_index.", n_bad)
-    return df.dropna(subset=["valid_date", "h3_index"]).reset_index(drop=True)
+    return df[~bad].reset_index(drop=True)
 
 
 def compute_borough_frames(planning: pd.DataFrame) -> pd.DataFrame:

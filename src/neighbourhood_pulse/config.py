@@ -128,6 +128,10 @@ CHAIN_BRANDS = [
 LAG_TRIM_FRACTION = 0.75
 MAX_LAG_MONTHS = 4
 
+# Silent-mass-drop guard: load_planning raises if more than this fraction of
+# rows would be dropped (unparseable date / null h3). Real data loses <<1%.
+PLANNING_MAX_DROP_FRACTION = 0.01
+
 # --- Phase B: modelling pipeline ---
 
 # Intermediates (gitignored, data/processed) and final artifacts (artifacts/).

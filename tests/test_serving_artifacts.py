@@ -27,3 +27,5 @@ def test_metrics_json_matches_feature_contract():
     metrics = json.loads(Path(METRICS_PATH).read_text(encoding="utf-8"))
     assert metrics["feature_cols"] == FEATURE_COLS
     assert {"r2_linear", "r2_xgboost", "backtest", "n_hexagons"} <= set(metrics)
+    assert "build" in metrics
+    assert metrics["build"]["versions"]["xgboost"]

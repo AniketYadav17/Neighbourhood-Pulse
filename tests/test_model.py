@@ -133,3 +133,6 @@ def test_save_artifacts_writes_all_three(tmp_path):
     saved = json.loads((tmp_path / "metrics.json").read_text())
     assert saved["r2_xgboost"] == pytest.approx(metrics["r2_xgboost"])
     assert saved["feature_cols"] == FEATURE_COLS
+    build = saved["build"]
+    assert set(build) >= {"package_version", "git_sha", "trained_at", "versions"}
+    assert set(build["versions"]) == {"python", "pandas", "scikit_learn", "xgboost"}

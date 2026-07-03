@@ -39,6 +39,36 @@ logger = logging.getLogger(__name__)
 EARTH_RADIUS_KM = 6371.0
 
 
+def _build_metadata() -> dict:
+    """Provenance stamped into metrics.json: what trained this artifact set."""
+    import platform
+    import subprocess
+    from datetime import datetime, timezone
+
+    import sklearn
+    import xgboost
+
+    from neighbourhood_pulse import __version__
+
+    try:
+        git_sha = subprocess.check_output(
+            ["git", "rev-parse", "--short", "HEAD"], text=True
+        ).strip()
+    except (OSError, subprocess.CalledProcessError):
+        git_sha = "unknown"
+    return {
+        "package_version": __version__,
+        "git_sha": git_sha,
+        "trained_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "versions": {
+            "python": platform.python_version(),
+            "pandas": pd.__version__,
+            "scikit_learn": sklearn.__version__,
+            "xgboost": xgboost.__version__,
+        },
+    }
+
+
 def add_centrality(df: pd.DataFrame) -> pd.DataFrame:
     """Haversine km from each hexagon's centroid to Charing Cross (single-centre control)."""
     df = df.copy()
@@ -153,7 +183,12 @@ def save_artifacts(
         os.path.join(artifacts_dir, os.path.basename(VALUATION_GAP_PATH)), index=False
     )
     joblib.dump(model, os.path.join(artifacts_dir, os.path.basename(MODEL_PATH)))
-    payload = {**metrics, "n_hexagons": int(len(gap_df)), "feature_cols": FEATURE_COLS}
+    payload = {
+        **metrics,
+        "n_hexagons": int(len(gap_df)),
+        "feature_cols": FEATURE_COLS,
+        "build": _build_metadata(),
+    }
     with open(
         os.path.join(artifacts_dir, os.path.basename(METRICS_PATH)), "w", encoding="utf-8"
     ) as f:

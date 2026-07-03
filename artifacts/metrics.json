@@ -34,5 +34,16 @@
     "independent_cafe_count",
     "cafe_to_application_ratio",
     "dist_to_centre_km"
-  ]
+  ],
+  "build": {
+    "package_version": "1.0.0",
+    "git_sha": "4408a0f",
+    "trained_at": "2026-07-03T22:03:13+00:00",
+    "versions": {
+      "python": "3.12.7",
+      "pandas": "2.3.3",
+      "scikit_learn": "1.8.0",
+      "xgboost": "3.1.3"
+    }
+  }
 }

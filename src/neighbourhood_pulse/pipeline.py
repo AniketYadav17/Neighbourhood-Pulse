@@ -5,6 +5,7 @@ Module-level path bindings (imported names, not config.X attribute access)
 are deliberate: tests monkeypatch them per-test.
 """
 
+import json
 import logging
 import os
 
@@ -111,7 +112,6 @@ def run_train(force: bool = False) -> dict:
         or _fresh(METRICS_PATH, force)
         or _fresh(MODEL_PATH, force)
     ):
-        ran = True
         train = pd.read_parquet(HEX_TRAINING_PATH)
         metrics = train_and_evaluate(train)
         gap_df = compute_valuation_gap(train)
@@ -120,10 +120,9 @@ def run_train(force: bool = False) -> dict:
         metrics["backtest"] = run_backtest(gap_df, sales, lookup)
         model = fit_full(train)
         save_artifacts(gap_df, metrics, model, artifacts_dir=ARTIFACTS_DIR)
-        return metrics
+    else:
+        logger.info("All artifacts up to date; nothing to do.")
 
-    logger.info("All artifacts up to date; nothing to do.")
-    import json
-
+    # One return shape: metrics.json IS the contract (JSON floats round-trip exactly).
     with open(METRICS_PATH, encoding="utf-8") as f:
         return json.load(f)

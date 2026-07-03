@@ -109,12 +109,27 @@ def test_load_planning_parses_dayfirst_and_drops_bad_rows(tmp_path):
     )
     p = tmp_path / "planning.parquet"
     raw.to_parquet(p, index=False)
-    out = load_planning(str(p))
+    out = load_planning(str(p), max_drop_fraction=1.0)
     # day-first: 05/03/2023 is 5 March, not 3 May
     assert out["valid_date"].iloc[0] == pd.Timestamp("2023-03-05")
     # unparseable date and null h3 rows dropped
     assert len(out) == 1
     assert list(out.columns) == ["h3_index", "lpa_name", "description", "valid_date"]
+
+
+def test_load_planning_raises_on_mass_drop(tmp_path):
+    raw = pd.DataFrame(
+        {
+            "h3_index": ["h1", "h2", None],
+            "lpa_name": ["A", "A", "A"],
+            "description": ["x", "y", "z"],
+            "valid_date": ["05/03/2023", "not a date", "01/01/2023"],
+        }
+    )
+    p = tmp_path / "planning.parquet"
+    raw.to_parquet(p, index=False)
+    with pytest.raises(ValueError, match="would be dropped"):
+        load_planning(str(p))  # default 1% threshold; 2/3 bad rows
 
 
 def two_borough_planning():
