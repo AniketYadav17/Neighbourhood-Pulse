@@ -55,3 +55,17 @@ def test_ingest_failure_exits_1(monkeypatch):
     with pytest.raises(SystemExit) as excinfo:
         cli.main(["ingest"])
     assert excinfo.value.code == 1
+
+
+def test_train_dispatches_with_force(monkeypatch):
+    import neighbourhood_pulse.pipeline as pipeline_module
+
+    calls = {}
+
+    def fake_run_train(force=False):
+        calls["force"] = force
+        return {"r2_linear": 0.4, "r2_xgboost": 0.44}
+
+    monkeypatch.setattr(pipeline_module, "run_train", fake_run_train)
+    cli.main(["train", "--force"])
+    assert calls == {"force": True}

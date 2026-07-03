@@ -19,6 +19,10 @@ def main(argv: list[str] | None = None) -> None:
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("ingest", help="fetch planning applications and cafés (resumable)")
     sub.add_parser("transform", help="filter coordinates, convert CRS, assign H3 hexagons")
+    train_parser = sub.add_parser("train", help="build features, target, model, and artifacts")
+    train_parser.add_argument(
+        "--force", action="store_true", help="rebuild even if artifacts exist"
+    )
     args = parser.parse_args(argv)
     setup_logging(args.verbose)
 
@@ -35,3 +39,10 @@ def main(argv: list[str] | None = None) -> None:
         from neighbourhood_pulse.transformation import DataTransformation
 
         DataTransformation().run()
+    elif args.command == "train":
+        from neighbourhood_pulse.pipeline import run_train
+
+        metrics = run_train(force=args.force)
+        logging.getLogger(__name__).info(
+            "Done. R² linear=%.3f xgboost=%.3f", metrics["r2_linear"], metrics["r2_xgboost"]
+        )
