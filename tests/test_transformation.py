@@ -22,9 +22,13 @@ def dt():
 def planning_frame():
     return pd.DataFrame(
         {
-            "centroid_easting": [TRAFALGAR_BNG[0], -4722, 800_000],
-            "centroid_northing": [TRAFALGAR_BNG[1], 6_725_758, 100_000],
-            "description": ["valid", "web-mercator junk", "easting out of range"],
+            "centroid_easting": pd.array(
+                [TRAFALGAR_BNG[0], -4722, 800_000, pd.NA], dtype="Int64"
+            ),
+            "centroid_northing": pd.array(
+                [TRAFALGAR_BNG[1], 6_725_758, 100_000, pd.NA], dtype="Int64"
+            ),
+            "description": ["valid", "web-mercator junk", "easting out of range", "missing coords"],
         }
     )
 
@@ -46,6 +50,11 @@ def coffee_frame():
 
 
 def test_invalid_bng_rows_are_dropped(dt):
+    out = dt.transform_planning_data(planning_frame())
+    assert list(out["description"]) == ["valid"]
+
+
+def test_na_coordinates_are_dropped_not_crashing(dt):
     out = dt.transform_planning_data(planning_frame())
     assert list(out["description"]) == ["valid"]
 

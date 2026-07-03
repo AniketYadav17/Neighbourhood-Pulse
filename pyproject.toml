@@ -19,6 +19,9 @@ dependencies = [
     "osmnx>=1.9,<3",
     "requests>=2.31",
     "python-dateutil>=2.8",
+    "scikit-learn>=1.3,<2",
+    "xgboost>=2.0,<4",
+    "joblib>=1.3",
     # Current Streamlit viewer; folium/branca are replaced by pydeck in Phase C.
     "streamlit>=1.32",
     "folium>=0.15",

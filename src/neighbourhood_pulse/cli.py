@@ -24,9 +24,13 @@ def main(argv: list[str] | None = None) -> None:
 
     # Imports deferred so `pulse --help` stays fast and tests can stub the classes.
     if args.command == "ingest":
-        from neighbourhood_pulse.ingestion import DataIngestion
+        from neighbourhood_pulse.ingestion import DataIngestion, IngestionError
 
-        DataIngestion().run()
+        try:
+            DataIngestion().run()
+        except IngestionError as e:
+            logging.getLogger(__name__).error("Ingestion failed: %s", e)
+            raise SystemExit(1) from e
     elif args.command == "transform":
         from neighbourhood_pulse.transformation import DataTransformation
 

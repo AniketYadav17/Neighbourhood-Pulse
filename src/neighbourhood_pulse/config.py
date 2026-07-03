@@ -125,3 +125,50 @@ CHAIN_BRANDS = [
 # (likely a genuine decline) and is flagged rather than silently trimmed.
 LAG_TRIM_FRACTION = 0.75
 MAX_LAG_MONTHS = 4
+
+# --- Phase B: modelling pipeline ---
+
+# Intermediates (gitignored, data/processed) and final artifacts (artifacts/).
+HEX_FEATURES_PATH = "data/processed/hex_features.parquet"
+LR_SALES_PATH = "data/processed/lr_london_sales.parquet"
+HEX_PRICE_TARGET_PATH = "data/processed/hex_price_target.parquet"
+HEX_TRAINING_PATH = "data/processed/hex_training.parquet"
+ARTIFACTS_DIR = "artifacts"
+VALUATION_GAP_PATH = "artifacts/hex_valuation_gap.parquet"
+METRICS_PATH = "artifacts/metrics.json"
+MODEL_PATH = "artifacts/model.joblib"
+
+# Land Registry Price Paid CSVs (national, ~870 MB total, data/raw).
+LR_RAW_DIR = "data/raw"
+LR_YEARS = (2021, 2022, 2023, 2024, 2025)
+# LR spells a few boroughs in full; map config names (upper, & -> AND) to LR district names.
+NAME_FIX = {
+    "KINGSTON": "KINGSTON UPON THAMES",
+    "RICHMOND": "RICHMOND UPON THAMES",
+    "WESTMINSTER": "CITY OF WESTMINSTER",
+}
+RESIDENTIAL_PTYPES = ("D", "S", "T", "F")  # detached/semi/terraced/flat; drop "O" (other)
+MIN_SALES_PER_HEX = 30  # pooled-sales floor for a stable per-hexagon median
+
+RECENT_WINDOW_MONTHS = 12  # "recent" window for applications_recent / velocity
+
+# Back-test windows: early gap (2021-22) vs subsequent growth (2024-25).
+BACKTEST_EARLY_YEARS = (2021, 2022)
+BACKTEST_LATE_YEARS = (2024, 2025)
+BACKTEST_MIN_SALES = 15  # per window, per hexagon
+
+# Centrality control: haversine distance to Charing Cross.
+CX_LAT, CX_LON = 51.507, -0.1278
+
+# Model feature set (order matters for the saved model's predict).
+FEATURE_COLS = [
+    "total_applications",
+    "change_of_use_count",
+    "applications_recent",
+    "change_of_use_ratio",
+    "planning_velocity",
+    "total_cafe_count",
+    "independent_cafe_count",
+    "cafe_to_application_ratio",
+    "dist_to_centre_km",
+]

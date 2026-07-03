@@ -19,3 +19,12 @@ def test_config_has_all_33_boroughs():
     assert "Kingston" in TARGET_BOROUGHS  # no "upon Thames"
     assert "Westminster" in TARGET_BOROUGHS  # no "City of"
     assert "LLDC" not in TARGET_BOROUGHS  # development corps excluded
+
+
+def test_feature_cols_and_paths_consistent():
+    from neighbourhood_pulse import config
+
+    assert len(config.FEATURE_COLS) == 9
+    assert config.FEATURE_COLS[-1] == "dist_to_centre_km"
+    assert config.VALUATION_GAP_PATH.startswith(config.ARTIFACTS_DIR)
+    assert set(config.NAME_FIX) == {"KINGSTON", "RICHMOND", "WESTMINSTER"}
