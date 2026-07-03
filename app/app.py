@@ -1,7 +1,7 @@
 """Neighbourhood Pulse — Streamlit viewer.
 
 A THIN packaging layer over the trained valuation-gap model: it loads the single
-precomputed artifact (`data/processed/hex_valuation_gap.parquet`), renders the
+precomputed artifact (`artifacts/hex_valuation_gap.parquet`), renders the
 gap map and the most-undervalued table, and frames the result honestly. No model
 training, no recomputation — the data science lives in the notebook; this is the
 viewer a recruiter clicks.

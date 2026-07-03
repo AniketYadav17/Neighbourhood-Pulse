@@ -54,7 +54,9 @@ neighbourhood-pulse/
 │
 ├── data/
 │   ├── raw/                    ← Raw fetched data (not tracked by Git)
-│   └── processed/              ← Processed data + the committed valuation-gap artifact
+│   └── processed/              ← Intermediate pipeline outputs (not tracked by Git)
+│
+├── artifacts/                  ← Committed serving artifacts (valuation gap, metrics, model)
 │
 ├── notebooks/
 │   └── 01_eda.ipynb            ← Frozen research record (EDA → features → model → back-test)
@@ -85,10 +87,11 @@ cd Neighbourhood-Pulse
 pip install -e .
 ```
 
-3. Run the data pipeline (fetches ~490k planning records; resumable, takes a while)
+3. Run the pipeline (fetch → transform → train; resumable)
 ```bash
 pulse ingest
 pulse transform
+pulse train
 ```
 
 4. Launch the app
