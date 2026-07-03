@@ -194,3 +194,13 @@ def save_artifacts(
     ) as f:
         json.dump(payload, f, indent=2)
     logger.info("Artifacts saved to %s/.", artifacts_dir)
+
+
+def feature_bounds(gap_df: pd.DataFrame) -> dict[str, tuple[float, float]]:
+    """Observed per-feature [min, max] from the gap artifact — the what-if envelope.
+
+    The model never saw values outside these ranges, so both the API's /predict
+    validation and the app's sliders clamp to them: extrapolation is refused,
+    not silently mispredicted.
+    """
+    return {c: (float(gap_df[c].min()), float(gap_df[c].max())) for c in FEATURE_COLS}
