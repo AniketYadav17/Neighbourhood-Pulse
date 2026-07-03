@@ -1,0 +1,38 @@
+{
+  "r2_linear": 0.4181163585173744,
+  "r2_xgboost": 0.43850166302919746,
+  "feature_importance": {
+    "total_applications": 0.1228363886475563,
+    "change_of_use_count": 0.0814354419708252,
+    "applications_recent": 0.10082893073558807,
+    "change_of_use_ratio": 0.24590961635112762,
+    "planning_velocity": 0.06788086146116257,
+    "total_cafe_count": 0.06054544821381569,
+    "independent_cafe_count": 0.06694205850362778,
+    "cafe_to_application_ratio": 0.0743548721075058,
+    "dist_to_centre_km": 0.1792663186788559
+  },
+  "backtest": {
+    "n_hexagons": 1578,
+    "correlation": -0.24913262102221947,
+    "quintiles": {
+      "Q1 most undervalued": 7.33389789383191,
+      "Q2": 4.597175037737083,
+      "Q3": 3.5174730959987257,
+      "Q4": 1.6984118979906233,
+      "Q5 most overvalued": -1.5345902342702722
+    }
+  },
+  "n_hexagons": 1694,
+  "feature_cols": [
+    "total_applications",
+    "change_of_use_count",
+    "applications_recent",
+    "change_of_use_ratio",
+    "planning_velocity",
+    "total_cafe_count",
+    "independent_cafe_count",
+    "cafe_to_application_ratio",
+    "dist_to_centre_km"
+  ]
+}
