@@ -14,8 +14,10 @@ import logging
 import pandas as pd
 
 from neighbourhood_pulse.config import (
+    CHAIN_BRANDS,
     LAG_TRIM_FRACTION,
     MAX_LAG_MONTHS,
+    RECENT_WINDOW_MONTHS,
 )
 
 logger = logging.getLogger(__name__)
@@ -81,3 +83,72 @@ def assign_hex_borough(planning: pd.DataFrame) -> pd.Series:
     fake-acceleration bias the trim removes.
     """
     return planning.groupby("h3_index")["lpa_name"].agg(lambda s: s.value_counts().idxmax())
+
+
+def build_planning_features(
+    planning: pd.DataFrame, frames: pd.DataFrame, hex_borough: pd.Series
+) -> pd.DataFrame:
+    """Volume + temporal features per hexagon, trimmed by each hexagon's governing frame."""
+    df = planning.copy()
+    df["gov_borough"] = df["h3_index"].map(hex_borough)
+    df["gov_anchor"] = df["gov_borough"].map(frames["anchor"])
+    df["gov_cutoff"] = df["gov_anchor"] - pd.DateOffset(months=RECENT_WINDOW_MONTHS)
+
+    n_before = len(df)
+    df = df[df["valid_date"] <= df["gov_anchor"]].copy()
+    logger.info(
+        "Per-borough trim dropped %s of %s records (%.1f%%).",
+        n_before - len(df),
+        n_before,
+        100 * (n_before - len(df)) / max(n_before, 1),
+    )
+
+    # na=False keeps the boolean clean for summing; with no NaNs in the mask,
+    # size == count on it — `size` is used as the NaN-proof true row count.
+    df["is_change_of_use"] = df["description"].str.contains("change of use", case=False, na=False)
+    df["is_recent"] = df["valid_date"] > df["gov_cutoff"]
+
+    hexf = (
+        df.groupby("h3_index")
+        .agg(
+            total_applications=("is_change_of_use", "size"),
+            change_of_use_count=("is_change_of_use", "sum"),
+            applications_recent=("is_recent", "sum"),
+        )
+        .reset_index()
+    )
+    hexf["change_of_use_ratio"] = hexf["change_of_use_count"] / hexf["total_applications"]
+    hexf["borough"] = hexf["h3_index"].map(hex_borough)
+    hexf["span_years"] = hexf["borough"].map(frames["span_years"])
+    # Recent 12-month rate vs the hexagon's own historical annual average (>1 = accelerating),
+    # both measured within the same governing borough's frame.
+    hexf["planning_velocity"] = hexf["applications_recent"] / (
+        hexf["total_applications"] / hexf["span_years"]
+    )
+    return hexf
+
+
+def build_coffee_features(coffee: pd.DataFrame) -> pd.DataFrame:
+    """Café counts per hexagon; a null brand is independent (OSM rarely tags independents)."""
+    df = coffee.dropna(subset=["h3_index"]).copy()
+    df["is_independent"] = ~df["brand"].isin(CHAIN_BRANDS)
+    return (
+        df.groupby("h3_index")
+        .agg(
+            total_cafe_count=("is_independent", "size"),
+            independent_cafe_count=("is_independent", "sum"),
+        )
+        .reset_index()
+    )
+
+
+def build_hex_features(
+    planning_features: pd.DataFrame, coffee_features: pd.DataFrame
+) -> pd.DataFrame:
+    """Left-merge cafés onto the planning matrix — planning hexagons are the unit of analysis."""
+    hexf = planning_features.merge(coffee_features, on="h3_index", how="left")
+    for col in ["total_cafe_count", "independent_cafe_count"]:
+        hexf[col] = hexf[col].fillna(0).astype(int)
+    # Divide-safe: every planning hexagon has >= 1 application by construction.
+    hexf["cafe_to_application_ratio"] = hexf["total_cafe_count"] / hexf["total_applications"]
+    return hexf
