@@ -8,15 +8,14 @@ median monthly count are trimmed (contiguous tail only — an interior dip is
 real signal). MAX_LAG_MONTHS caps the trim; a longer run is implausible as
 lag and is flagged as likely real decline instead.
 """
+
 import logging
 
 import pandas as pd
 
 from neighbourhood_pulse.config import (
-    CHAIN_BRANDS,
     LAG_TRIM_FRACTION,
     MAX_LAG_MONTHS,
-    RECENT_WINDOW_MONTHS,
 )
 
 logger = logging.getLogger(__name__)
@@ -55,7 +54,9 @@ def compute_borough_frames(planning: pd.DataFrame) -> pd.DataFrame:
             logger.warning(
                 "%s: %s trailing months below threshold (> MAX_LAG_MONTHS=%s) — "
                 "implausible as pure lag, likely real decline; capping trim.",
-                borough, below, MAX_LAG_MONTHS,
+                borough,
+                below,
+                MAX_LAG_MONTHS,
             )
         # Guard len-1: a degenerate single-month series must keep its only month.
         # (Never fires on real data; notebook had no such borough.)

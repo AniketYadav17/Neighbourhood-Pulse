@@ -1,7 +1,6 @@
 """Tests for the per-borough reporting-lag frames — the subtlest logic in the project."""
-import numpy as np
+
 import pandas as pd
-import pytest
 
 from neighbourhood_pulse.config import LAG_TRIM_FRACTION, MAX_LAG_MONTHS
 from neighbourhood_pulse.features import (
@@ -22,8 +21,14 @@ def month_series(borough, counts, start="2021-01-01", hex_id="hexA"):
     rows = []
     for month, n in zip(months, counts, strict=True):
         for _ in range(n):
-            rows.append({"lpa_name": borough, "valid_date": month + pd.Timedelta(days=10),
-                         "h3_index": hex_id, "description": "extension"})
+            rows.append(
+                {
+                    "lpa_name": borough,
+                    "valid_date": month + pd.Timedelta(days=10),
+                    "h3_index": hex_id,
+                    "description": "extension",
+                }
+            )
     return pd.DataFrame(rows)
 
 
@@ -75,25 +80,29 @@ class TestComputeBoroughFrames:
 
 
 def test_assign_hex_borough_is_modal():
-    df = pd.DataFrame({
-        "h3_index": ["h1"] * 3 + ["h2"] * 2,
-        "lpa_name": ["A", "A", "B", "B", "B"],
-        "valid_date": pd.Timestamp("2022-01-01"),
-        "description": "x",
-    })
+    df = pd.DataFrame(
+        {
+            "h3_index": ["h1"] * 3 + ["h2"] * 2,
+            "lpa_name": ["A", "A", "B", "B", "B"],
+            "valid_date": pd.Timestamp("2022-01-01"),
+            "description": "x",
+        }
+    )
     hb = assign_hex_borough(df)
     assert hb["h1"] == "A"
     assert hb["h2"] == "B"
 
 
 def test_load_planning_parses_dayfirst_and_drops_bad_rows(tmp_path):
-    raw = pd.DataFrame({
-        "h3_index": ["h1", "h2", None],
-        "lpa_name": ["A", "A", "A"],
-        "description": ["x", "y", "z"],
-        "valid_date": ["05/03/2023", "not a date", "01/01/2023"],
-        "extra_column": [1, 2, 3],
-    })
+    raw = pd.DataFrame(
+        {
+            "h3_index": ["h1", "h2", None],
+            "lpa_name": ["A", "A", "A"],
+            "description": ["x", "y", "z"],
+            "valid_date": ["05/03/2023", "not a date", "01/01/2023"],
+            "extra_column": [1, 2, 3],
+        }
+    )
     p = tmp_path / "planning.parquet"
     raw.to_parquet(p, index=False)
     out = load_planning(str(p))
