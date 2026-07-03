@@ -22,9 +22,7 @@ def dt():
 def planning_frame():
     return pd.DataFrame(
         {
-            "centroid_easting": pd.array(
-                [TRAFALGAR_BNG[0], -4722, 800_000, pd.NA], dtype="Int64"
-            ),
+            "centroid_easting": pd.array([TRAFALGAR_BNG[0], -4722, 800_000, pd.NA], dtype="Int64"),
             "centroid_northing": pd.array(
                 [TRAFALGAR_BNG[1], 6_725_758, 100_000, pd.NA], dtype="Int64"
             ),
