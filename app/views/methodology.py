@@ -33,9 +33,9 @@ plus a single centrality control. Predictions are **out-of-fold** (5-fold
 `actual / predicted − 1` — negative means priced below what the signals imply.
 
 ### Data sources
-- [Planning London Datahub](https://planninglondondatahub.london.gov.uk) — planning applications, all 33 boroughs
+- [Planning London Datahub](https://planninglondondatahub.london.gov.uk) — planning applications
 - [OpenStreetMap via OSMnx](https://github.com/gboeing/osmnx) — café locations and brands
-- [HM Land Registry Price Paid](https://landregistry.data.gov.uk/) — residential sales 2021–2025 (ground truth)
+- [HM Land Registry Price Paid](https://landregistry.data.gov.uk/) — sales 2021–2025 (ground truth)
 """
 )
 
