@@ -5,6 +5,7 @@ artifacts/*
 !artifacts/hex_valuation_gap.parquet
 !artifacts/metrics.json
 !artifacts/model.joblib
+!artifacts/briefs.json
 logs/
 
 # Regenerable research map exports — large folium HTML, kept local only.

@@ -178,3 +178,18 @@ FEATURE_COLS = [
     "cafe_to_application_ratio",
     "dist_to_centre_km",
 ]
+
+# --- Phase C: precomputed neighbourhood briefs (Claude API, build time only) ---
+
+BRIEFS_PATH = "artifacts/briefs.json"
+BRIEFS_N_HEXAGONS = 50  # the most-undervalued hexagons — what app users click first
+# Model choice (documented cost/quality trade-off): the briefs are short, tightly
+# grounded generations with a strict JSON schema — Haiku-class work. Haiku 4.5
+# also still accepts a pinned low temperature, which Sonnet 5 / Opus 4.7+ reject.
+# claude-sonnet-5 ($3/$15 per MTok vs $1/$5) is the drop-in quality upgrade;
+# a full 50-brief run costs pennies on either.
+BRIEFS_MODEL = "claude-haiku-4-5"
+BRIEFS_MAX_TOKENS = 400
+BRIEFS_TEMPERATURE = 0.2
+BRIEFS_MAX_COST_USD = 1.00  # hard stop; an actual full run is ~$0.06
+BRIEFS_PRICE_PER_MTOK = {"input": 1.00, "output": 5.00}  # claude-haiku-4-5, 2026-07

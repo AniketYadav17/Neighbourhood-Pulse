@@ -2,7 +2,19 @@
 
 import argparse
 import logging
+import os
 import sys
+
+
+def _run_briefs(force: bool) -> None:
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        logging.getLogger(__name__).error(
+            "ANTHROPIC_API_KEY is not set — briefs generation calls the Claude API."
+        )
+        raise SystemExit(1)
+    from neighbourhood_pulse.briefs import run_briefs
+
+    run_briefs(force=force)
 
 
 def setup_logging(verbose: bool = False) -> None:
@@ -23,6 +35,10 @@ def main(argv: list[str] | None = None) -> None:
     train_parser.add_argument(
         "--force", action="store_true", help="rebuild even if artifacts exist"
     )
+    briefs_parser = sub.add_parser("briefs", help="generate LLM neighbourhood briefs (Claude API)")
+    briefs_parser.add_argument("--force", action="store_true", help="regenerate all briefs")
+    all_parser = sub.add_parser("all", help="ingest, transform, train, briefs — end to end")
+    all_parser.add_argument("--force", action="store_true", help="rebuild even if artifacts exist")
     args = parser.parse_args(argv)
     setup_logging(args.verbose)
 
@@ -46,3 +62,18 @@ def main(argv: list[str] | None = None) -> None:
         logging.getLogger(__name__).info(
             "Done. R² linear=%.3f xgboost=%.3f", metrics["r2_linear"], metrics["r2_xgboost"]
         )
+    elif args.command == "briefs":
+        _run_briefs(force=args.force)
+    elif args.command == "all":
+        from neighbourhood_pulse.ingestion import DataIngestion, IngestionError
+        from neighbourhood_pulse.pipeline import run_train
+        from neighbourhood_pulse.transformation import DataTransformation
+
+        try:
+            DataIngestion().run()
+        except IngestionError as e:
+            logging.getLogger(__name__).error("Ingestion failed: %s", e)
+            raise SystemExit(1) from e
+        DataTransformation().run()
+        run_train(force=args.force)
+        _run_briefs(force=args.force)

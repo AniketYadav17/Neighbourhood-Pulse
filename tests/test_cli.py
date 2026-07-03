@@ -69,3 +69,24 @@ def test_train_dispatches_with_force(monkeypatch):
     monkeypatch.setattr(pipeline_module, "run_train", fake_run_train)
     cli.main(["train", "--force"])
     assert calls == {"force": True}
+
+
+def test_briefs_without_api_key_exits_1(monkeypatch):
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    with pytest.raises(SystemExit) as excinfo:
+        cli.main(["briefs"])
+    assert excinfo.value.code == 1
+
+
+def test_briefs_dispatches_with_key(monkeypatch):
+    import neighbourhood_pulse.briefs as briefs_module
+
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+    called = {}
+
+    def fake_run_briefs(force):
+        called.setdefault("force", force)
+
+    monkeypatch.setattr(briefs_module, "run_briefs", fake_run_briefs)
+    cli.main(["briefs", "--force"])
+    assert called == {"force": True}
