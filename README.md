@@ -1,114 +1,106 @@
-# Neighbourhood-Pulse
+# Neighbourhood Pulse
+
+**A gentrification predictor for London** — planning applications, change-of-use
+conversions, and independent-café density, modelled per H3 hexagon against Land
+Registry prices to surface *candidate undervalued* neighbourhoods before price
+growth appears.
+
+[![CI](https://github.com/AniketYadav17/Neighbourhood-Pulse/actions/workflows/ci.yml/badge.svg)](https://github.com/AniketYadav17/Neighbourhood-Pulse/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/Python-3.10+-blue)
-![Status](https://img.shields.io/badge/Status-In%20Progress-yellow)
 ![License](https://img.shields.io/badge/License-GPL--3.0-blue)
-![Data](https://img.shields.io/badge/Data-46k%2B%20Records-green)
 
-### The Neighbourhood Pulse: A Spatiotemporal Gentrification Predictor for London.
+**Live app:** *deploy link added in the deploy task* · **API docs:** `docker compose up` → http://localhost:8000/docs
 
-## Why this matters?
+![Neighbourhood Pulse — Explore](docs/images/app_hero.png)
 
-Gentrification is happening all around London, and the best time to invest in these properties was 6 months ago. 
+## What it does
 
-A major way gentrification is measured by tracking the change in house prices. But, as silly as it sounds, economic indicators suggest the existence of pre-gentrification signals that can help us invest in properties early on. These are usually the areas flocked by young professionals who desire a safer space with low rental prices. An existing trend is the pop-up of independent cafes around these areas, which can act as an early indicator of gentrification. 
-Another worthy early signal, before the warehouses turn into flats, shops into restaurants and industrial units into creative studios, are the applications that are filed 12-24 months in advance before the actual change in geography.
+1. Ingests ~350k planning applications (all 33 boroughs) and ~6,600 cafés.
+2. Engineers per-hexagon signals with a per-borough reporting-lag correction.
+3. Trains XGBoost on `log(median sale price)` (held-out R² ≈ 0.44) and computes
+   an **out-of-fold valuation gap** — actual price vs signal-implied price.
+4. Back-tests the thesis: hexagons flagged undervalued early (2021–22) grew
+   **monotonically more** (+7.3% → −1.5% across gap quintiles into 2024–25).
+5. Serves it: an interactive hexagon map with per-neighbourhood LLM briefs and
+   a live what-if repricing panel.
 
-Using these data-points and Land Registry data as ground truth, a predictive model is built to quantify these signals and identify undervalued London neighbourhoods before price growth appears. 
+## Architecture
 
-This has direct applications in property investment, retail site selection, and mortgage risk assessment. Equally, it provides critical foresight for city planning and transportation, allowing authorities to proactively adapt transit routes, allocate resources, and update public infrastructure ahead of rapid demographic shifts.
-
-## The Data
-
-### 1. Planning London Datahub
-[Planning London Datahub](https://planninglondondatahub.london.gov.uk) — Planning data 
-about change-of-use in property.
-- 46,000+ planning applications across three London boroughs
-- Pipeline designed to scale to all 33 boroughs (~2-3 million records)
-
-### 2. OpenStreetMap via OSMnx
-[OSMnx](https://github.com/gboeing/osmnx) — Used to extract existing 
-cafe locations across Greater London.
-- 6,600+ independent coffee shops fetched
-
-### 3. Land Registry Price Paid Data
-[Land Registry](https://landregistry.data.gov.uk/) — Public property 
-transaction data used as ground truth for price growth. 
-
-## Tech Stack
-
-| Tool | Purpose |
-|------|---------|
-| Python | Primary language |
-| Elasticsearch API | Reverse engineered internal API via Chrome DevTools |
-| OSMnx | OpenStreetMap interface for coffee shop data |
-| Pandas | Data manipulation and transformation |
-| Parquet / PyArrow | Column-based storage, 100x faster than CSV |
-| Requests | HTTP client for API calls |
-
-## Project Structure 
-```
-neighbourhood-pulse/
-│
-├── app/
-│   └── app.py                  ← Streamlit web application
-│
-├── data/
-│   ├── raw/                    ← Raw fetched data (not tracked by Git)
-│   └── processed/              ← Intermediate pipeline outputs (not tracked by Git)
-│
-├── artifacts/                  ← Committed serving artifacts (valuation gap, metrics, model)
-│
-├── notebooks/
-│   └── 01_eda.ipynb            ← Frozen research record (EDA → features → model → back-test)
-│
-├── src/
-│   └── neighbourhood_pulse/    ← Installable package
-│       ├── config.py           ← All constants and configuration
-│       ├── ingestion.py        ← Resumable planning + café data acquisition
-│       ├── transformation.py   ← BNG→WGS84 conversion and H3 indexing
-│       └── cli.py              ← `pulse` command-line entry point
-│
-├── tests/                      ← Characterization tests (mocked HTTP, no network)
-├── .github/workflows/ci.yml    ← Lint + tests on every push
-├── pyproject.toml              ← Package metadata, dependencies, tooling config
-└── CITATIONS.md                ← Data source attributions
+```mermaid
+flowchart LR
+    R[(data/raw)] -->|pulse transform| P[(data/processed)]
+    P -->|pulse train| ART[(artifacts/)]
+    ART -->|pulse briefs| ART
+    ART --> APP[Streamlit app]
+    ART --> API[FastAPI /predict]
+    API -.->|compose only| APP
 ```
 
-## How to Run 
+Batch pipeline → four committed serving artifacts → two thin consumers.
+Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · design rationale:
+[docs/DECISIONS.md](docs/DECISIONS.md).
 
-1. Clone the repository
+## Quickstart
+
 ```bash
 git clone https://github.com/AniketYadav17/Neighbourhood-Pulse.git
 cd Neighbourhood-Pulse
-```
+pip install -e ".[dev]"        # add [geo] only if you'll run ingestion locally
 
-2. Install (Python 3.10+)
-```bash
-pip install -e .
-```
-
-3. Run the pipeline (fetch → transform → train; resumable)
-```bash
-pulse ingest
-pulse transform
-pulse train
-```
-
-4. Launch the app
-```bash
+# The app runs immediately from the committed artifacts:
 streamlit run app/app.py
+
+# Or rebuild everything from raw data (hours; network; ~1 GB Land Registry CSVs):
+pulse ingest && pulse transform && pulse train
+
+# API + app together (what-if panel round-trips through POST /predict):
+docker compose up --build      # api :8000 (/docs), app :8501
 ```
 
-## Results  
-![Planning Application Hotspots](notebooks/images/hotspot_map.png)
-*Top 20 most active H3 hexagons across Newham, Redbridge and Waltham Forest*
+`pytest` (92 tests, no network) and `ruff check .` run in CI on every push,
+including a parity gate that pins the pipeline's output to the validated
+research results and a Docker build of the serving image.
 
-## Limitations and Future Work
+## API
 
-- Currently, planning data from three boroughs (Newham, Redbridge, Waltham Forest) is extracted. Going forward, all 33 boroughs planning data can be extracted for analysis and prediction. 
-- Within Planning data, we can extract details about upcoming cafe shops opening and not just the current ones to get a stronger prediction signal.
-- We can scrape the data weekly, use a PostgreSQL Database with PostGIS and automate the ML pipeline to retrain the model and observe data drifts. 
+With `docker compose up` running (interactive OpenAPI docs at http://localhost:8000/docs):
 
-## Citations
+```bash
+curl "localhost:8000/hexagons?borough=Hackney&max_gap=-0.2"   # undervalued Hackney hexagons
+curl "localhost:8000/hexagons/<h3_index>"                     # signals + prices + LLM brief
+curl -X POST localhost:8000/predict -H "content-type: application/json" \
+     -d '{"total_applications": 120, "change_of_use_count": 12, "applications_recent": 30,
+          "change_of_use_ratio": 0.1, "planning_velocity": 1.2, "total_cafe_count": 4,
+          "independent_cafe_count": 3, "cafe_to_application_ratio": 0.033, "dist_to_centre_km": 9.5}'
+```
 
-Boeing, G. (2025). Modeling and Analyzing Urban Networks and Amenities with OSMnx. Geographical Analysis 57 (4), 567-577. doi:10.1111/gean.70009
+## Results
+
+| Metric | Value |
+|---|---|
+| Held-out R² (XGBoost, log price) | 0.439 |
+| Held-out R² (linear baseline) | 0.418 |
+| Modelled hexagons (≥30 pooled sales) | 1,694 |
+| Back-test gap→growth correlation | −0.249 |
+| Growth spread, most- vs least-undervalued quintile | +7.3% vs −1.5% |
+
+Top predictor after controlling for centrality: **change-of-use ratio** — the
+"shops becoming cafés/flats" signal.
+
+## Honest limitations
+
+- One distance-to-centre feature can't fully model London's polycentric price
+  surface — some outer-borough "undervaluation" is residual location effect.
+  The gap is a candidate signal, not investment advice.
+- The back-test is proof-of-concept: features aren't strictly frozen as of
+  2021, and 2-year sale windows are thin at hexagon level.
+- Coverage is ~66% of London hexagons (planning activity + sales floor).
+- Future work: PostGIS + scheduled ingestion, drift monitoring, retraining
+  cadence, geocoding coverage 66%→95%.
+
+## Data sources
+
+[Planning London Datahub](https://planninglondondatahub.london.gov.uk) ·
+[OpenStreetMap via OSMnx](https://github.com/gboeing/osmnx) ·
+[HM Land Registry Price Paid](https://landregistry.data.gov.uk/) — see
+[CITATIONS.md](CITATIONS.md).
