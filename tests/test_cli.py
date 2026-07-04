@@ -72,7 +72,8 @@ def test_train_dispatches_with_force(monkeypatch):
 
 
 def test_briefs_without_api_key_exits_1(monkeypatch):
-    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
     with pytest.raises(SystemExit) as excinfo:
         cli.main(["briefs"])
     assert excinfo.value.code == 1
@@ -81,7 +82,7 @@ def test_briefs_without_api_key_exits_1(monkeypatch):
 def test_briefs_dispatches_with_key(monkeypatch):
     import neighbourhood_pulse.briefs as briefs_module
 
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
     called = {}
 
     def fake_run_briefs(force):

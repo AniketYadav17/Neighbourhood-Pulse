@@ -17,7 +17,7 @@ pulse ingest     Planning London Datahub (33 boroughs, scroll API, resumable)
 pulse transform  BNG -> WGS84, H3 resolution-8 hexagon indexing
 pulse train      per-borough lag-trimmed features -> Land Registry price target
                  -> XGBoost on log(median price) -> out-of-fold valuation gap
-pulse briefs     Claude API neighbourhood briefs (build time; the app makes
+pulse briefs     Gemini API neighbourhood briefs (build time; the app makes
                  zero API calls)
 ```
 

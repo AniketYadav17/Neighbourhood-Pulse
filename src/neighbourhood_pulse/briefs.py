@@ -1,11 +1,12 @@
-"""Precomputed LLM neighbourhood briefs (Claude API at build time only).
+"""Precomputed LLM neighbourhood briefs (Gemini API at build time only).
 
 The deployed app makes zero API calls: `pulse briefs` runs locally against the
 committed gap artifact and commits the result as artifacts/briefs.json. Every
-response is forced to a strict JSON schema server-side (output_config) and
+response is forced to a strict JSON schema server-side (response_schema) and
 re-validated locally with pydantic before acceptance. Per-hexagon caching makes
 reruns fill only the gaps (resumable, like ingestion); a hard cost cap bounds
-spend; the SDK's max_retries handles 429/5xx backoff.
+spend; the SDK's HttpRetryOptions handles 429/5xx backoff. Needs GEMINI_API_KEY
+(or GOOGLE_API_KEY) set in the environment — never hardcoded.
 """
 
 import json
@@ -51,7 +52,7 @@ BRIEF_SCHEMA = {
 
 
 class Brief(BaseModel):
-    """Local re-validation of the model's JSON (belt and braces over output_config)."""
+    """Local re-validation of the model's JSON (belt and braces over response_schema)."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -117,19 +118,33 @@ def generate_briefs(
                 spent,
             )
             break
-        response = client.messages.create(
+        response = client.models.generate_content(
             model=BRIEFS_MODEL,
-            max_tokens=BRIEFS_MAX_TOKENS,
-            temperature=BRIEFS_TEMPERATURE,
-            system=SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": build_user_prompt(row)}],
-            output_config={"format": {"type": "json_schema", "schema": BRIEF_SCHEMA}},
+            contents=build_user_prompt(row),
+            config={
+                "system_instruction": SYSTEM_PROMPT,
+                "temperature": BRIEFS_TEMPERATURE,
+                "max_output_tokens": BRIEFS_MAX_TOKENS,
+                "response_mime_type": "application/json",
+                "response_schema": BRIEF_SCHEMA,
+            },
         )
-        spent += estimate_cost_usd(response.usage.input_tokens, response.usage.output_tokens)
-        if response.stop_reason != "end_turn":
-            logger.warning("%s: stop_reason=%s — skipped.", h3_index, response.stop_reason)
+        usage = response.usage_metadata
+        if usage is not None:
+            spent += estimate_cost_usd(
+                usage.prompt_token_count or 0, usage.candidates_token_count or 0
+            )
+        if not response.candidates:
+            logger.warning("%s: no candidates in response (likely blocked) — skipped.", h3_index)
             continue
-        text = next(block.text for block in response.content if block.type == "text")
+        finish_reason = response.candidates[0].finish_reason
+        if finish_reason is not None and finish_reason != "STOP":
+            logger.warning("%s: finish_reason=%s — skipped.", h3_index, finish_reason)
+            continue
+        text = response.text
+        if not text:
+            logger.warning("%s: empty response text — skipped.", h3_index)
+            continue
         try:
             brief = Brief.model_validate(json.loads(text))
         except (json.JSONDecodeError, ValidationError) as e:
@@ -157,13 +172,19 @@ def write_briefs_file(briefs: dict, path: str = BRIEFS_PATH) -> None:
 
 
 def run_briefs(force: bool = False) -> dict:
-    """CLI entry: gap artifact -> briefs.json (needs ANTHROPIC_API_KEY)."""
-    import anthropic  # deferred: serving and app code paths never import the SDK
+    """CLI entry: gap artifact -> briefs.json (needs GEMINI_API_KEY or GOOGLE_API_KEY)."""
+    from google import genai  # deferred: serving and app code paths never import the SDK
+    from google.genai import types
 
     gap = pd.read_parquet(VALUATION_GAP_PATH)
     hexes = select_brief_hexagons(gap)
     briefs = {} if force else load_briefs_file()
-    client = anthropic.Anthropic(max_retries=5)  # SDK backs off on 429/5xx
+    # SDK backs off on 408/429/5xx; 5 attempts / 1s initial / 60s max / 2x backoff
+    # are the library defaults, made explicit here since we rely on them.
+    retry_options = types.HttpRetryOptions(
+        attempts=5, initial_delay=1.0, max_delay=60.0, exp_base=2.0
+    )
+    client = genai.Client(http_options=types.HttpOptions(retry_options=retry_options))
     generate_briefs(hexes, client, briefs, save=write_briefs_file)
     write_briefs_file(briefs)
     logger.info("%s: %s briefs.", BRIEFS_PATH, len(briefs))

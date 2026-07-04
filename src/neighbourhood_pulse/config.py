@@ -179,17 +179,21 @@ FEATURE_COLS = [
     "dist_to_centre_km",
 ]
 
-# --- Phase C: precomputed neighbourhood briefs (Claude API, build time only) ---
+# --- Phase C: precomputed neighbourhood briefs (Gemini API, build time only) ---
 
 BRIEFS_PATH = "artifacts/briefs.json"
 BRIEFS_N_HEXAGONS = 50  # the most-undervalued hexagons — what app users click first
 # Model choice (documented cost/quality trade-off): the briefs are short, tightly
-# grounded generations with a strict JSON schema — Haiku-class work. Haiku 4.5
-# also still accepts a pinned low temperature, which Sonnet 5 / Opus 4.7+ reject.
-# claude-sonnet-5 ($3/$15 per MTok vs $1/$5) is the drop-in quality upgrade;
-# a full 50-brief run costs pennies on either.
-BRIEFS_MODEL = "claude-haiku-4-5"
+# grounded generations with a strict JSON schema — flash-class work, and the free
+# tier covers a full run at $0. gemini-2.5-flash ($0.30/$2.50 per MTok) is the
+# cheaper stable flash if the paid tier is ever hit; gemini-3.5-flash (current
+# stable flash, used here) is the quality upgrade at ~5x the price ($1.50/$9.00),
+# and gemini-3.1-pro-class models are the further step up for harder reasoning.
+# A full 50-brief run costs pennies on either paid tier; free tier is $0 either way.
+# (The Claude/Anthropic version of this module lives in git history at commit
+# 9393202 if ever needed again.)
+BRIEFS_MODEL = "gemini-3.5-flash"
 BRIEFS_MAX_TOKENS = 400
 BRIEFS_TEMPERATURE = 0.2
-BRIEFS_MAX_COST_USD = 1.00  # hard stop; an actual full run is ~$0.06
-BRIEFS_PRICE_PER_MTOK = {"input": 1.00, "output": 5.00}  # claude-haiku-4-5, 2026-07
+BRIEFS_MAX_COST_USD = 1.00  # hard stop; an actual full run is ~$0.06 on the paid tier
+BRIEFS_PRICE_PER_MTOK = {"input": 1.50, "output": 9.00}  # gemini-3.5-flash, 2026-07

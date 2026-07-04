@@ -43,12 +43,12 @@ pipeline's gap artifact must match the notebook-era golden (identical hexagon
 set and prices, gap correlation >0.999). Any code change that moves outputs
 beyond tolerance is a bug by definition.
 
-## 8. Precomputed LLM briefs, committed as an artifact
-Briefs are generated at build time (`pulse briefs`) with a closed-world prompt
-(only supplied signals may be cited), server-side JSON-schema enforcement, and
-local re-validation. The deployed app makes zero API calls: no key to leak, no
-latency, no cost surprises, fully reproducible reviews. Per-hexagon caching and
-a hard cost cap make regeneration safe.
+## 8. Precomputed LLM briefs via the Gemini API, committed as an artifact
+Briefs are generated at build time (`pulse briefs`, Gemini API) with a
+closed-world prompt (only supplied signals may be cited), server-side
+JSON-schema enforcement, and local re-validation. The deployed app makes zero
+API calls: no key to leak, no latency, no cost surprises, fully reproducible
+reviews. Per-hexagon caching and a hard cost cap make regeneration safe.
 
 ## 9. pydeck H3HexagonLayer over folium
 v1 hand-built 2,567 folium polygons into an HTML string (slow, no interaction).

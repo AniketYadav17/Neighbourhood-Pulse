@@ -24,7 +24,7 @@ dependencies = [
     "fastapi>=0.110",
     "uvicorn>=0.29",
     "pydantic>=2.6",
-    "anthropic>=0.60",
+    "google-genai>=1.0",
 ]
 
 [project.optional-dependencies]

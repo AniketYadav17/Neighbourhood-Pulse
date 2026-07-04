@@ -7,9 +7,10 @@ import sys
 
 
 def _run_briefs(force: bool) -> None:
-    if not os.environ.get("ANTHROPIC_API_KEY"):
+    if not (os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")):
         logging.getLogger(__name__).error(
-            "ANTHROPIC_API_KEY is not set — briefs generation calls the Claude API."
+            "GEMINI_API_KEY (or GOOGLE_API_KEY) is not set — briefs generation calls the "
+            "Gemini API."
         )
         raise SystemExit(1)
     from neighbourhood_pulse.briefs import run_briefs
@@ -35,7 +36,7 @@ def main(argv: list[str] | None = None) -> None:
     train_parser.add_argument(
         "--force", action="store_true", help="rebuild even if artifacts exist"
     )
-    briefs_parser = sub.add_parser("briefs", help="generate LLM neighbourhood briefs (Claude API)")
+    briefs_parser = sub.add_parser("briefs", help="generate LLM neighbourhood briefs (Gemini API)")
     briefs_parser.add_argument("--force", action="store_true", help="regenerate all briefs")
     all_parser = sub.add_parser("all", help="ingest, transform, train, briefs — end to end")
     all_parser.add_argument("--force", action="store_true", help="rebuild even if artifacts exist")

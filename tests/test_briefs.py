@@ -1,4 +1,4 @@
-"""Briefs generation against a faked Anthropic client — no network, ever."""
+"""Briefs generation against a faked google-genai client — no network, ever."""
 
 import json
 from types import SimpleNamespace
@@ -45,26 +45,29 @@ def gap_frame():
     return pd.DataFrame(rows)
 
 
-def fake_response(payload):
+def fake_response(payload, finish_reason="STOP"):
     text = payload if isinstance(payload, str) else json.dumps(payload)
     return SimpleNamespace(
-        content=[SimpleNamespace(type="text", text=text)],
-        usage=SimpleNamespace(input_tokens=400, output_tokens=120),
-        stop_reason="end_turn",
+        text=text,
+        candidates=[SimpleNamespace(finish_reason=finish_reason)],
+        usage_metadata=SimpleNamespace(prompt_token_count=400, candidates_token_count=120),
     )
+
+
+class FakeModels:
+    def __init__(self, outer, payloads):
+        self.outer = outer
+        self.payloads = payloads
+
+    def generate_content(self, **kwargs):
+        self.outer.calls.append(kwargs)
+        return fake_response(self.payloads[len(self.outer.calls) - 1])
 
 
 class FakeClient:
     def __init__(self, payloads):
         self.calls = []
-        outer = self
-
-        class Messages:
-            def create(self, **kwargs):
-                outer.calls.append(kwargs)
-                return fake_response(payloads[len(outer.calls) - 1])
-
-        self.messages = Messages()
+        self.models = FakeModels(self, payloads)
 
 
 def test_select_orders_most_undervalued_first():
@@ -111,12 +114,13 @@ def test_request_shape_pins_grounding_controls():
     client = FakeClient([GOOD, GOOD, GOOD])
     generate_briefs(gap_frame(), client, {})
     kwargs = client.calls[0]
-    assert kwargs["model"] == "claude-haiku-4-5"
-    assert kwargs["temperature"] == 0.2
-    assert "ONLY the signals" in kwargs["system"]
-    assert kwargs["output_config"]["format"]["type"] == "json_schema"
+    assert kwargs["model"] == "gemini-3.5-flash"
+    assert kwargs["config"]["temperature"] == 0.2
+    assert "ONLY the signals" in kwargs["config"]["system_instruction"]
+    assert kwargs["config"]["response_mime_type"] == "application/json"
+    assert kwargs["config"]["response_schema"]["additionalProperties"] is False
 
 
 def test_estimate_cost_usd():
-    assert estimate_cost_usd(1_000_000, 0) == 1.00
-    assert estimate_cost_usd(0, 1_000_000) == 5.00
+    assert estimate_cost_usd(1_000_000, 0) == 1.50
+    assert estimate_cost_usd(0, 1_000_000) == 9.00

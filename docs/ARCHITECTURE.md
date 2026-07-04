@@ -13,7 +13,7 @@ flowchart LR
     end
     R -->|pulse transform| P[(data/processed)]
     P -->|pulse train| ART[(artifacts/)]
-    ART -->|pulse briefs + Claude API| ART
+    ART -->|pulse briefs + Gemini API| ART
     ART --> APP[Streamlit app - Streamlit Cloud]
     ART --> API[FastAPI - docker-compose]
     API -.->|POST /predict, compose only| APP
