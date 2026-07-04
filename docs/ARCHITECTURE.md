@@ -35,7 +35,7 @@ Everything downstream reads exactly four committed files:
 | Artifact | Contents | Consumers |
 |---|---|---|
 | `hex_valuation_gap.parquet` | per-hexagon signals, prices, OOF gap | app Explore, API `/hexagons` |
-| `metrics.json` | R², importances, back-test, build provenance | app Model page, API metadata, CI contract test |
+| `metrics.json` | R², importances, back-test, build provenance | app Model page, CI contract test |
 | `model.joblib` | full-data XGBoost fit (serving only) | what-if repricing (app in-process, API `/predict`) |
 | `briefs.json` | LLM briefs for the top-50 undervalued hexagons | app detail panel, API detail endpoint |
 

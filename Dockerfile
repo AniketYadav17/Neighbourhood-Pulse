@@ -1,11 +1,11 @@
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 WORKDIR /srv
 
 # Layer-cache the install: metadata + source first, artifacts/app after.
-COPY pyproject.toml README.md LICENSE ./
+COPY pyproject.toml README.md LICENSE requirements.txt ./
 COPY src ./src
-RUN pip install --no-cache-dir .
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY artifacts ./artifacts
 COPY app ./app
