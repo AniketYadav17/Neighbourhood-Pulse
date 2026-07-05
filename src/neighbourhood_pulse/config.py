@@ -242,11 +242,9 @@ BRIEFS_THINKING_CONFIG = {"thinking_budget": 0}
 BRIEFS_TEMPERATURE = 0.2
 BRIEFS_MAX_COST_USD = 1.00  # hard stop; an actual full run is well under $0.01 on the paid tier
 BRIEFS_PRICE_PER_MTOK = {"input": 0.10, "output": 0.40}  # gemini-2.5-flash-lite, 2026-07
-# Free tier for flash-lite-class models is ~15 RPM (reports converge on this
-# across gemini-2.5-flash-lite and gemini-3.1-flash-lite alike, since
-# ai.google.dev/gemini-api/docs/rate-limits no longer publishes a static
-# per-model table — see the BRIEFS_MODEL comment above for sourcing). 60/15 =
-# 4.0s minimum spacing; +10% margin = 4.4s, comfortably under the ~1000 RPD
-# free-tier budget's per-request pacing needs for a 50-brief run. Set to 0 on
-# a paid tier (no RPM cap there).
-BRIEFS_MIN_REQUEST_INTERVAL_S = 4.4
+# Observed free-tier RPM for gemini-2.5-flash-lite is 10 (quotaValue from a
+# real 429 on 2026-07-05; ai.google.dev/gemini-api/docs/rate-limits no longer
+# publishes a static per-model table). 60/10 = 6.0s minimum spacing; +10%
+# margin = 6.6s. Headroom matters doubly here because the SDK's own 503
+# retries also count against the RPM budget. Set to 0 on a paid tier.
+BRIEFS_MIN_REQUEST_INTERVAL_S = 6.6
