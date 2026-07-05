@@ -193,7 +193,23 @@ BRIEFS_N_HEXAGONS = 50  # the most-undervalued hexagons — what app users click
 # (The Claude/Anthropic version of this module lives in git history at commit
 # 9393202 if ever needed again.)
 BRIEFS_MODEL = "gemini-3.5-flash"
-BRIEFS_MAX_TOKENS = 400
+# gemini-3.5-flash is a "thinking" model: max_output_tokens is a shared cap over
+# thinking tokens AND the visible completion, not the completion alone. The
+# gemini-3 family also replaces the older thinking_budget (token count, 0 =
+# off) with thinking_level ("minimal"/"low"/"medium"/"high"); "minimal" is the
+# lowest available level for this model family — thinking cannot be fully
+# disabled, only minimized. 400 tokens was consumed entirely by thought before
+# any JSON was emitted (every response hit finish_reason=MAX_TOKENS); 4000
+# gives generous headroom for minimal-level thinking plus the ~200-token brief.
+BRIEFS_MAX_TOKENS = 4000
+# briefs are formulaic; thinking adds cost/latency with no quality gain here
+BRIEFS_THINKING_LEVEL = "minimal"
 BRIEFS_TEMPERATURE = 0.2
 BRIEFS_MAX_COST_USD = 1.00  # hard stop; an actual full run is ~$0.06 on the paid tier
 BRIEFS_PRICE_PER_MTOK = {"input": 1.50, "output": 9.00}  # gemini-3.5-flash, 2026-07
+# Free tier allows 5 requests/min (GenerateRequestsPerMinutePerProjectPerModel-
+# FreeTier) for gemini-3.5-flash; 13s spacing (~4.6 req/min) stays under that
+# with margin. The server's 429 retryDelay is ~50s — far longer than the SDK's
+# default backoff ceiling — so pacing requests up front avoids relying on
+# retry-after-the-fact entirely. Set to 0 on a paid tier (no RPM cap there).
+BRIEFS_MIN_REQUEST_INTERVAL_S = 13.0

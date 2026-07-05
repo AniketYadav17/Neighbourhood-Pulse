@@ -4,7 +4,9 @@ import json
 from types import SimpleNamespace
 
 import pandas as pd
+import pytest
 
+from neighbourhood_pulse import briefs as briefs_module
 from neighbourhood_pulse.briefs import (
     build_user_prompt,
     estimate_cost_usd,
@@ -17,6 +19,28 @@ GOOD = {
     "brief": "Planning activity is high.",
     "caveat": "Small sample.",
 }
+
+
+@pytest.fixture(autouse=True)
+def no_sleep(monkeypatch):
+    """Every test in this module runs through generate_briefs's pacing/retry
+    sleeps. Recording them (instead of letting them elapse) keeps the suite
+    instant while still letting individual tests assert on what was slept."""
+    calls = []
+    monkeypatch.setattr(briefs_module.time, "sleep", lambda s: calls.append(s))
+    return calls
+
+
+class FakeQuotaError(Exception):
+    """Duck-types google.genai.errors.ClientError's 429 shape (a `.code` attribute)."""
+
+    code = 429
+
+
+class FakeOtherError(Exception):
+    """A non-quota API error — should be skipped, not retried."""
+
+    code = 500
 
 
 def gap_frame():
@@ -127,6 +151,151 @@ def test_request_shape_pins_grounding_controls():
     assert set(schema["required"]) == {"headline", "brief", "caveat"}
 
 
+def test_request_shape_budgets_for_thinking_tokens():
+    # gemini-3.5-flash spends max_output_tokens on thinking before the JSON
+    # completion; 400 (the old value) was consumed entirely by thought and
+    # every response hit finish_reason=MAX_TOKENS. Thinking can't be fully
+    # disabled on this model family (no thinking_budget=0 support), only
+    # minimized via thinking_level, so headroom must come from max_output_tokens.
+    client = FakeClient([GOOD])
+    generate_briefs(gap_frame(), client, {}, request_interval_s=0)
+    config = client.calls[0]["config"]
+    assert config["max_output_tokens"] == 4000
+    assert config["thinking_config"] == {"thinking_level": "minimal"}
+
+
 def test_estimate_cost_usd():
     assert estimate_cost_usd(1_000_000, 0) == 1.50
     assert estimate_cost_usd(0, 1_000_000) == 9.00
+
+
+def test_quota_error_retries_then_succeeds(no_sleep):
+    """A 429 on the first attempt for a hexagon is retried, not fatal."""
+
+    class QuotaThenSuccessModels:
+        def __init__(self, outer):
+            self.outer = outer
+            self.attempts = 0
+
+        def generate_content(self, **kwargs):
+            self.outer.calls.append(kwargs)
+            self.attempts += 1
+            if self.attempts == 1:
+                raise FakeQuotaError("rate limited")
+            return fake_response(GOOD)
+
+    class QuotaThenSuccessClient:
+        def __init__(self):
+            self.calls = []
+            self.models = QuotaThenSuccessModels(self)
+
+    client = QuotaThenSuccessClient()
+    briefs = generate_briefs(gap_frame().iloc[[0]], client, {}, request_interval_s=0)
+    assert set(briefs) == {"hex0"}  # the hexagon was recovered, not skipped
+    assert len(client.calls) == 2  # one failed attempt, one successful retry
+    assert 60.0 in no_sleep  # the quota-retry sleep happened (mocked, not real)
+
+
+def test_persistent_quota_error_skips_hexagon_and_continues(no_sleep):
+    """A hexagon whose quota errors never clear is skipped after
+    QUOTA_MAX_RETRIES, but the run continues to the next hexagon."""
+
+    class AlwaysQuotaErrorModels:
+        def __init__(self, outer, fail_calls):
+            self.outer = outer
+            self.fail_calls = fail_calls
+
+        def generate_content(self, **kwargs):
+            self.outer.calls.append(kwargs)
+            if len(self.outer.calls) <= self.fail_calls:
+                raise FakeQuotaError("rate limited")
+            return fake_response(GOOD)
+
+    class AlwaysQuotaErrorClient:
+        def __init__(self, fail_calls):
+            self.calls = []
+            self.models = AlwaysQuotaErrorModels(self, fail_calls)
+
+    # hex0's every attempt (1 initial + 3 retries = 4 calls) fails; hex1, hex2
+    # then succeed normally, proving the loop moved on.
+    client = AlwaysQuotaErrorClient(fail_calls=4)
+    briefs = generate_briefs(gap_frame(), client, {}, request_interval_s=0)
+    assert set(briefs) == {"hex1", "hex2"}  # hex0 skipped, run continued
+    assert len(client.calls) == 6  # 4 for hex0 + 1 each for hex1, hex2
+    assert no_sleep.count(60.0) == 3  # three quota-retry sleeps, then gave up
+
+
+def test_non_quota_api_error_skips_hexagon_immediately(no_sleep):
+    """A non-429 API error is not retried — it skips straight away."""
+
+    class OneShotErrorModels:
+        def __init__(self, outer):
+            self.outer = outer
+
+        def generate_content(self, **kwargs):
+            self.outer.calls.append(kwargs)
+            if len(self.outer.calls) == 1:
+                raise FakeOtherError("server error")
+            return fake_response(GOOD)
+
+    class OneShotErrorClient:
+        def __init__(self):
+            self.calls = []
+            self.models = OneShotErrorModels(self)
+
+    client = OneShotErrorClient()
+    briefs = generate_briefs(gap_frame(), client, {}, request_interval_s=0)
+    assert set(briefs) == {"hex1", "hex2"}  # hex0 skipped, no retry attempted
+    assert len(client.calls) == 3  # one failed attempt for hex0 (not retried) + 2
+    assert 60.0 not in no_sleep  # no quota-retry sleep for a non-quota error
+
+
+def test_thoughts_tokens_counted_in_spend():
+    """Paid-tier billing counts thinking as output; the cost cap must too."""
+    response_with_thoughts = SimpleNamespace(
+        text=json.dumps(GOOD),
+        candidates=[SimpleNamespace(finish_reason="STOP")],
+        usage_metadata=SimpleNamespace(
+            prompt_token_count=400, candidates_token_count=120, thoughts_token_count=1000
+        ),
+    )
+
+    class ThoughtsModels:
+        def __init__(self, outer):
+            self.outer = outer
+
+        def generate_content(self, **kwargs):
+            self.outer.calls.append(kwargs)
+            return response_with_thoughts
+
+    class ThoughtsClient:
+        def __init__(self):
+            self.calls = []
+            self.models = ThoughtsModels(self)
+
+    client = ThoughtsClient()
+    briefs = generate_briefs(
+        gap_frame().iloc[[0]], client, {}, request_interval_s=0, max_cost_usd=1e9
+    )
+    assert set(briefs) == {"hex0"}
+    expected = estimate_cost_usd(400, 120 + 1000)
+    # No direct spend getter, so re-derive: with a cap just under the expected
+    # spend, a second hexagon must not be attempted.
+    client2 = ThoughtsClient()
+    briefs2 = generate_briefs(
+        gap_frame(), client2, {}, request_interval_s=0, max_cost_usd=expected - 1e-9
+    )
+    assert len(client2.calls) == 1  # thoughts tokens pushed spend over the cap already
+    assert set(briefs2) == {"hex0"}
+
+
+def test_pacing_sleeps_between_consecutive_calls(no_sleep):
+    """Consecutive calls are spaced at least request_interval_s apart."""
+    client = FakeClient([GOOD, GOOD, GOOD])
+    generate_briefs(gap_frame(), client, {}, request_interval_s=13.0)
+    assert len(client.calls) == 3
+    # First call has nothing to wait on; the next two must each wait roughly
+    # the full interval since the fake calls return instantly.
+    waits = [s for s in no_sleep if s != 60.0]
+    assert len(waits) == 2
+    assert all(9.0 < w <= 13.0 for w in waits)

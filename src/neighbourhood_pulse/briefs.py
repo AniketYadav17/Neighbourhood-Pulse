@@ -5,13 +5,17 @@ committed gap artifact and commits the result as artifacts/briefs.json. Every
 response is forced to a strict JSON schema server-side (response_schema) and
 re-validated locally with pydantic before acceptance. Per-hexagon caching makes
 reruns fill only the gaps (resumable, like ingestion); a hard cost cap bounds
-spend; the SDK's HttpRetryOptions handles 429/5xx backoff. Needs GEMINI_API_KEY
-(or GOOGLE_API_KEY) set in the environment — never hardcoded.
+spend. The SDK's HttpRetryOptions handles transient 408/5xx backoff; free-tier
+429s (5 requests/min) are additionally paced up front (BRIEFS_MIN_REQUEST_INTERVAL_S)
+and, if one still slips through, retried per-hexagon with a longer sleep — see
+generate_briefs. Needs GEMINI_API_KEY (or GOOGLE_API_KEY) set in the
+environment — never hardcoded.
 """
 
 import json
 import logging
 import os
+import time
 
 import pandas as pd
 from pydantic import BaseModel, ConfigDict, ValidationError
@@ -19,15 +23,23 @@ from pydantic import BaseModel, ConfigDict, ValidationError
 from neighbourhood_pulse.config import (
     BRIEFS_MAX_COST_USD,
     BRIEFS_MAX_TOKENS,
+    BRIEFS_MIN_REQUEST_INTERVAL_S,
     BRIEFS_MODEL,
     BRIEFS_N_HEXAGONS,
     BRIEFS_PATH,
     BRIEFS_PRICE_PER_MTOK,
     BRIEFS_TEMPERATURE,
+    BRIEFS_THINKING_LEVEL,
     VALUATION_GAP_PATH,
 )
 
 logger = logging.getLogger(__name__)
+
+# Per-hexagon quota-retry policy for 429s: sleep and retry a handful of times,
+# then skip the hexagon like any other failure. A single throttled or broken
+# hexagon must never crash the whole (resumable) run.
+QUOTA_MAX_RETRIES = 3
+QUOTA_RETRY_SLEEP_S = 60.0
 
 SYSTEM_PROMPT = """You write short, grounded property-market briefs for London neighbourhoods.
 
@@ -101,12 +113,20 @@ def estimate_cost_usd(input_tokens: int, output_tokens: int) -> float:
     ) / 1e6
 
 
+def _is_quota_error(exc: Exception) -> bool:
+    """Duck-types the SDK's 429 (google.genai.errors.ClientError) without
+    importing google.genai here, so this module stays import-light and the
+    fake-client tests never need the real SDK installed."""
+    return getattr(exc, "code", None) == 429
+
+
 def generate_briefs(
     hexes: pd.DataFrame,
     client,
     briefs: dict,
     max_cost_usd: float = BRIEFS_MAX_COST_USD,
     save=None,
+    request_interval_s: float = BRIEFS_MIN_REQUEST_INTERVAL_S,
 ) -> dict:
     """Fill missing briefs; mutates and returns `briefs`.
 
@@ -114,8 +134,17 @@ def generate_briefs(
     dict after every accepted brief so partial progress survives any crash.
     Schema-invalid or refused responses are skipped, never fatal — a rerun
     retries only the gaps.
+
+    Requests are paced at least `request_interval_s` apart (free-tier RPM
+    limits) measuring from the previous call's start, so a slow call doesn't
+    stack an unnecessary full-length sleep on top. A 429 quota error retries
+    the same hexagon (sleeping `QUOTA_RETRY_SLEEP_S`) up to `QUOTA_MAX_RETRIES`
+    times before that hexagon is skipped; any other API error skips the
+    hexagon immediately. Either way the loop continues — one bad or throttled
+    hexagon never kills the run.
     """
     spent = 0.0
+    last_call_start = None
     for _, row in hexes.iterrows():
         h3_index = row["h3_index"]
         if h3_index in briefs:
@@ -127,21 +156,64 @@ def generate_briefs(
                 spent,
             )
             break
-        response = client.models.generate_content(
-            model=BRIEFS_MODEL,
-            contents=build_user_prompt(row),
-            config={
-                "system_instruction": SYSTEM_PROMPT,
-                "temperature": BRIEFS_TEMPERATURE,
-                "max_output_tokens": BRIEFS_MAX_TOKENS,
-                "response_mime_type": "application/json",
-                "response_schema": GEMINI_RESPONSE_SCHEMA,
-            },
-        )
+
+        response = None
+        quota_retries = 0
+        while True:
+            if last_call_start is not None and request_interval_s > 0:
+                wait = request_interval_s - (time.monotonic() - last_call_start)
+                if wait > 0:
+                    time.sleep(wait)
+            last_call_start = time.monotonic()
+            try:
+                response = client.models.generate_content(
+                    model=BRIEFS_MODEL,
+                    contents=build_user_prompt(row),
+                    config={
+                        "system_instruction": SYSTEM_PROMPT,
+                        "temperature": BRIEFS_TEMPERATURE,
+                        "max_output_tokens": BRIEFS_MAX_TOKENS,
+                        "thinking_config": {"thinking_level": BRIEFS_THINKING_LEVEL},
+                        "response_mime_type": "application/json",
+                        "response_schema": GEMINI_RESPONSE_SCHEMA,
+                    },
+                )
+            except Exception as e:
+                response = None
+                if _is_quota_error(e) and quota_retries < QUOTA_MAX_RETRIES:
+                    quota_retries += 1
+                    logger.warning(
+                        "%s: quota error (attempt %d/%d) — sleeping %.0fs and retrying.",
+                        h3_index,
+                        quota_retries,
+                        QUOTA_MAX_RETRIES,
+                        QUOTA_RETRY_SLEEP_S,
+                    )
+                    time.sleep(QUOTA_RETRY_SLEEP_S)
+                    continue
+                if _is_quota_error(e):
+                    logger.warning(
+                        "%s: quota still exceeded after %d retries — skipped.",
+                        h3_index,
+                        QUOTA_MAX_RETRIES,
+                    )
+                else:
+                    logger.warning("%s: API error (%s) — skipped.", h3_index, e)
+                break
+            else:
+                break
+
+        if response is None:
+            continue
+
         usage = response.usage_metadata
         if usage is not None:
+            # Paid-tier billing counts thinking tokens as output; fold them in
+            # here so the cost cap reflects what the invoice will actually say.
+            thoughts_tokens = getattr(usage, "thoughts_token_count", None) or 0
             spent += estimate_cost_usd(
-                usage.prompt_token_count or 0, usage.candidates_token_count or 0
+                usage.prompt_token_count or 0,
+                (usage.candidates_token_count or 0) + thoughts_tokens,
             )
         if not response.candidates:
             logger.warning("%s: no candidates in response (likely blocked) — skipped.", h3_index)
