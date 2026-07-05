@@ -118,7 +118,13 @@ def test_request_shape_pins_grounding_controls():
     assert kwargs["config"]["temperature"] == 0.2
     assert "ONLY the signals" in kwargs["config"]["system_instruction"]
     assert kwargs["config"]["response_mime_type"] == "application/json"
-    assert kwargs["config"]["response_schema"]["additionalProperties"] is False
+    schema = kwargs["config"]["response_schema"]
+    # Gemini's Schema proto rejects "additionalProperties" outright (400
+    # INVALID_ARGUMENT); it must never be sent, even though it's part of the
+    # canonical BRIEF_SCHEMA used for local validation.
+    assert "additionalProperties" not in schema
+    assert schema["type"] == "object"
+    assert set(schema["required"]) == {"headline", "brief", "caveat"}
 
 
 def test_estimate_cost_usd():

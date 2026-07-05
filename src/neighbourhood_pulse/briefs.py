@@ -50,6 +50,15 @@ BRIEF_SCHEMA = {
     "additionalProperties": False,
 }
 
+# Gemini's response_schema is an OpenAPI-subset Schema proto that does not
+# accept "additionalProperties" — the REST layer rejects it outright with
+# `400 INVALID_ARGUMENT: Unknown name "additional_properties"`. Send Gemini a
+# sanitized copy; BRIEF_SCHEMA above stays the canonical, fully-strict schema.
+# Extra-key rejection is still enforced locally by the pydantic `Brief` model
+# (`extra="forbid"`) — belt and braces was always the design, this just moves
+# where the "no extra keys" rule is checked.
+GEMINI_RESPONSE_SCHEMA = {k: v for k, v in BRIEF_SCHEMA.items() if k != "additionalProperties"}
+
 
 class Brief(BaseModel):
     """Local re-validation of the model's JSON (belt and braces over response_schema)."""
@@ -126,7 +135,7 @@ def generate_briefs(
                 "temperature": BRIEFS_TEMPERATURE,
                 "max_output_tokens": BRIEFS_MAX_TOKENS,
                 "response_mime_type": "application/json",
-                "response_schema": BRIEF_SCHEMA,
+                "response_schema": GEMINI_RESPONSE_SCHEMA,
             },
         )
         usage = response.usage_metadata
