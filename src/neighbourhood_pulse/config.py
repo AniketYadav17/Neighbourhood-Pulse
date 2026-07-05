@@ -183,33 +183,70 @@ FEATURE_COLS = [
 
 BRIEFS_PATH = "artifacts/briefs.json"
 BRIEFS_N_HEXAGONS = 50  # the most-undervalued hexagons — what app users click first
-# Model choice (documented cost/quality trade-off): the briefs are short, tightly
-# grounded generations with a strict JSON schema — flash-class work, and the free
-# tier covers a full run at $0. gemini-2.5-flash ($0.30/$2.50 per MTok) is the
-# cheaper stable flash if the paid tier is ever hit; gemini-3.5-flash (current
-# stable flash, used here) is the quality upgrade at ~5x the price ($1.50/$9.00),
-# and gemini-3.1-pro-class models are the further step up for harder reasoning.
-# A full 50-brief run costs pennies on either paid tier; free tier is $0 either way.
-# (The Claude/Anthropic version of this module lives in git history at commit
-# 9393202 if ever needed again.)
-BRIEFS_MODEL = "gemini-3.5-flash"
-# gemini-3.5-flash is a "thinking" model: max_output_tokens is a shared cap over
-# thinking tokens AND the visible completion, not the completion alone. The
-# gemini-3 family also replaces the older thinking_budget (token count, 0 =
-# off) with thinking_level ("minimal"/"low"/"medium"/"high"); "minimal" is the
-# lowest available level for this model family — thinking cannot be fully
-# disabled, only minimized. 400 tokens was consumed entirely by thought before
-# any JSON was emitted (every response hit finish_reason=MAX_TOKENS); 4000
-# gives generous headroom for minimal-level thinking plus the ~200-token brief.
-BRIEFS_MAX_TOKENS = 4000
-# briefs are formulaic; thinking adds cost/latency with no quality gain here
-BRIEFS_THINKING_LEVEL = "minimal"
+# Model choice, take 2 (see git history at commit 83f5103 and the "Fix: daily
+# quota + model switch" entry in .superpowers/sdd/task-10-gemini-report.md for
+# the full incident): the first real run against gemini-3.5-flash 429'd on
+# every single request with quotaId
+# GenerateRequestsPerDayPerProjectPerModel-FreeTier, quotaValue 20 — the
+# free-tier daily budget for that model is just 20 requests/day, so a 50-brief
+# run can *never* complete on it in one day, no matter how patient the retry
+# logic is. ai.google.dev/gemini-api/docs/rate-limits no longer publishes a
+# static per-model free-tier table (limits are dynamic/per-project, viewable
+# only in AI Studio), so this was cross-checked against multiple independent
+# reports (Google AI developer forum + several 2026 rate-limit write-ups):
+# flash-lite-tier models consistently get ~15 RPM / ~1000 RPD on the free
+# tier — ~50x the daily headroom a 50-brief run + retries needs, vs. the
+# standard (non-lite) flash tier where real-world daily quotas have been
+# reported anywhere from ~250 down to the ~20 this project actually hit.
+# That real-world flakiness rules out gemini-2.5-flash as a candidate despite
+# its official pricing-page billing, since it's the same non-lite class as
+# the model that just failed.
+# Between the two flash-lite options: gemini-3.1-flash-lite is the newer,
+# higher-quality pick ("frontier-class performance rivaling larger models" per
+# Google's own docs) but is gemini-3.x-family — its thinking mechanism is
+# thinking_level, whose floor is "minimal", not zero; thinking cannot be fully
+# disabled, so every call spends an unpredictable number of tokens on hidden
+# thought before the JSON completion (exactly the mechanism that caused a
+# separate max_output_tokens incident on gemini-3.5-flash). gemini-2.5-flash-lite
+# is gemini-2.5-family: its thinking_config uses thinking_budget (a token
+# count), and 0 genuinely and fully disables thinking — confirmed both by the
+# installed SDK's own field docstring ("0 is DISABLED") in
+# google/genai/types.py's ThinkingConfig, and by ai.google.dev/gemini-api/docs/thinking
+# listing gemini-2.5-flash-lite as the one model in its table whose *default*
+# thinking state is "Off". Given the whole point of this fix is eliminating
+# hidden-cost/hidden-quota surprises, gemini-2.5-flash-lite's fully-off,
+# fully-predictable thinking wins over gemini-3.1-flash-lite's marginal
+# quality edge for this short, formulaic, schema-constrained brief-generation
+# task — chosen as BRIEFS_MODEL, with gemini-3.1-flash-lite documented here as
+# the runner-up quality trade-off (same free-tier quota class, ~2.5x the
+# paid-tier price: $0.25/$1.50 vs. $0.10/$0.40 per MTok).
+BRIEFS_MODEL = "gemini-2.5-flash-lite"
+# With thinking fully disabled (thinking_budget=0, see BRIEFS_THINKING_CONFIG
+# below), max_output_tokens covers only the actual JSON completion — no hidden
+# thought tokens can eat into it the way they did on gemini-3.5-flash (which
+# needed 4000 for that reason). The brief itself is a ~12-word headline plus a
+# 2-3 sentence body plus a 1-sentence caveat: comfortably under 200 tokens in
+# practice. 800 leaves 4x headroom for verbose model output without inviting
+# runaway generations.
+BRIEFS_MAX_TOKENS = 800
+# gemini-2.5-flash-lite is gemini-2.5-family: thinking_config takes
+# thinking_budget (a token count), where 0 fully disables thinking (confirmed
+# via the installed SDK's ThinkingConfig field docstring: "0 is DISABLED. -1
+# is AUTOMATIC.") — unlike the gemini-3.x family's thinking_level, which has
+# no true "off" (its floor is "minimal"). Briefs are formulaic; thinking adds
+# cost, latency, and (per the incident this fix addresses) token-budget risk
+# with no quality gain here. Kept as a single dict (rather than a bare level
+# string) so the whole thinking-config shape travels with the model choice —
+# switching models later only means swapping this constant.
+BRIEFS_THINKING_CONFIG = {"thinking_budget": 0}
 BRIEFS_TEMPERATURE = 0.2
-BRIEFS_MAX_COST_USD = 1.00  # hard stop; an actual full run is ~$0.06 on the paid tier
-BRIEFS_PRICE_PER_MTOK = {"input": 1.50, "output": 9.00}  # gemini-3.5-flash, 2026-07
-# Free tier allows 5 requests/min (GenerateRequestsPerMinutePerProjectPerModel-
-# FreeTier) for gemini-3.5-flash; 13s spacing (~4.6 req/min) stays under that
-# with margin. The server's 429 retryDelay is ~50s — far longer than the SDK's
-# default backoff ceiling — so pacing requests up front avoids relying on
-# retry-after-the-fact entirely. Set to 0 on a paid tier (no RPM cap there).
-BRIEFS_MIN_REQUEST_INTERVAL_S = 13.0
+BRIEFS_MAX_COST_USD = 1.00  # hard stop; an actual full run is well under $0.01 on the paid tier
+BRIEFS_PRICE_PER_MTOK = {"input": 0.10, "output": 0.40}  # gemini-2.5-flash-lite, 2026-07
+# Free tier for flash-lite-class models is ~15 RPM (reports converge on this
+# across gemini-2.5-flash-lite and gemini-3.1-flash-lite alike, since
+# ai.google.dev/gemini-api/docs/rate-limits no longer publishes a static
+# per-model table — see the BRIEFS_MODEL comment above for sourcing). 60/15 =
+# 4.0s minimum spacing; +10% margin = 4.4s, comfortably under the ~1000 RPD
+# free-tier budget's per-request pacing needs for a 50-brief run. Set to 0 on
+# a paid tier (no RPM cap there).
+BRIEFS_MIN_REQUEST_INTERVAL_S = 4.4

@@ -6,10 +6,13 @@ response is forced to a strict JSON schema server-side (response_schema) and
 re-validated locally with pydantic before acceptance. Per-hexagon caching makes
 reruns fill only the gaps (resumable, like ingestion); a hard cost cap bounds
 spend. The SDK's HttpRetryOptions handles transient 408/5xx backoff; free-tier
-429s (5 requests/min) are additionally paced up front (BRIEFS_MIN_REQUEST_INTERVAL_S)
-and, if one still slips through, retried per-hexagon with a longer sleep — see
-generate_briefs. Needs GEMINI_API_KEY (or GOOGLE_API_KEY) set in the
-environment — never hardcoded.
+429s (per-minute RPM limits) are additionally paced up front
+(BRIEFS_MIN_REQUEST_INTERVAL_S) and, if one still slips through, retried
+per-hexagon with a longer sleep. A 429 whose *daily* quota is exhausted
+instead stops the whole run cleanly (no point retrying within a sleep loop
+against a quota that only resets at midnight Pacific) — see generate_briefs.
+Needs GEMINI_API_KEY (or GOOGLE_API_KEY) set in the environment — never
+hardcoded.
 """
 
 import json
@@ -29,7 +32,7 @@ from neighbourhood_pulse.config import (
     BRIEFS_PATH,
     BRIEFS_PRICE_PER_MTOK,
     BRIEFS_TEMPERATURE,
-    BRIEFS_THINKING_LEVEL,
+    BRIEFS_THINKING_CONFIG,
     VALUATION_GAP_PATH,
 )
 
@@ -120,6 +123,42 @@ def _is_quota_error(exc: Exception) -> bool:
     return getattr(exc, "code", None) == 429
 
 
+def _find_quota_id(payload: object) -> str | None:
+    """Recursively hunts a nested error payload for a QuotaFailure
+    violation's `quotaId`, without assuming exact nesting. Google's 429 body
+    is (roughly) `{"error": {"details": [{"violations": [{"quotaId": ...}]}]}}`,
+    but this walks any dict/list shape defensively rather than indexing into
+    it, since the exact structure isn't a documented contract."""
+    if isinstance(payload, dict):
+        quota_id = payload.get("quotaId")
+        if isinstance(quota_id, str):
+            return quota_id
+        for value in payload.values():
+            found = _find_quota_id(value)
+            if found is not None:
+                return found
+    elif isinstance(payload, list):
+        for item in payload:
+            found = _find_quota_id(item)
+            if found is not None:
+                return found
+    return None
+
+
+def _daily_quota_id(exc: Exception) -> str | None:
+    """Best-effort extraction of a 429's QuotaFailure quotaId, duck-typed
+    against google.genai.errors.APIError's `.details` attribute (the parsed
+    JSON response body — confirmed via the installed SDK's errors.py, where
+    `APIError.__init__` sets `self.details = response_json`). Returns None if
+    the attribute is missing or the shape doesn't match; callers must treat
+    that as "can't tell", not "not a daily quota", and fall back to the
+    existing per-minute retry behavior."""
+    details = getattr(exc, "details", None)
+    if details is None:
+        return None
+    return _find_quota_id(details)
+
+
 def generate_briefs(
     hexes: pd.DataFrame,
     client,
@@ -142,6 +181,15 @@ def generate_briefs(
     times before that hexagon is skipped; any other API error skips the
     hexagon immediately. Either way the loop continues — one bad or throttled
     hexagon never kills the run.
+
+    Exception: a 429 whose QuotaFailure quotaId contains "PerDay" means the
+    free-tier *daily* budget is exhausted — retrying is pointless, since it
+    won't clear until the quota resets at midnight Pacific, not within this
+    process's lifetime. That case stops the whole run immediately (no sleep,
+    no retry), not just the current hexagon; everything generated so far is
+    already saved per-brief, so a rerun tomorrow continues from where this
+    one stopped. If the quotaId can't be determined from the error's payload,
+    this falls back to the ordinary per-minute retry-then-skip behavior.
     """
     spent = 0.0
     last_call_start = None
@@ -159,6 +207,7 @@ def generate_briefs(
 
         response = None
         quota_retries = 0
+        daily_quota_hit = False
         while True:
             if last_call_start is not None and request_interval_s > 0:
                 wait = request_interval_s - (time.monotonic() - last_call_start)
@@ -173,25 +222,38 @@ def generate_briefs(
                         "system_instruction": SYSTEM_PROMPT,
                         "temperature": BRIEFS_TEMPERATURE,
                         "max_output_tokens": BRIEFS_MAX_TOKENS,
-                        "thinking_config": {"thinking_level": BRIEFS_THINKING_LEVEL},
+                        "thinking_config": BRIEFS_THINKING_CONFIG,
                         "response_mime_type": "application/json",
                         "response_schema": GEMINI_RESPONSE_SCHEMA,
                     },
                 )
             except Exception as e:
                 response = None
-                if _is_quota_error(e) and quota_retries < QUOTA_MAX_RETRIES:
-                    quota_retries += 1
-                    logger.warning(
-                        "%s: quota error (attempt %d/%d) — sleeping %.0fs and retrying.",
-                        h3_index,
-                        quota_retries,
-                        QUOTA_MAX_RETRIES,
-                        QUOTA_RETRY_SLEEP_S,
-                    )
-                    time.sleep(QUOTA_RETRY_SLEEP_S)
-                    continue
                 if _is_quota_error(e):
+                    quota_id = _daily_quota_id(e)
+                    if quota_id is not None and "PerDay" in quota_id:
+                        logger.warning(
+                            "%s: daily free-tier quota exhausted (quotaId=%s) — "
+                            "%d/%d briefs cached; rerun tomorrow (quota resets "
+                            "midnight Pacific) or switch to a paid tier.",
+                            h3_index,
+                            quota_id,
+                            len(briefs),
+                            len(hexes),
+                        )
+                        daily_quota_hit = True
+                        break
+                    if quota_retries < QUOTA_MAX_RETRIES:
+                        quota_retries += 1
+                        logger.warning(
+                            "%s: quota error (attempt %d/%d) — sleeping %.0fs and retrying.",
+                            h3_index,
+                            quota_retries,
+                            QUOTA_MAX_RETRIES,
+                            QUOTA_RETRY_SLEEP_S,
+                        )
+                        time.sleep(QUOTA_RETRY_SLEEP_S)
+                        continue
                     logger.warning(
                         "%s: quota still exceeded after %d retries — skipped.",
                         h3_index,
@@ -202,6 +264,9 @@ def generate_briefs(
                 break
             else:
                 break
+
+        if daily_quota_hit:
+            break
 
         if response is None:
             continue

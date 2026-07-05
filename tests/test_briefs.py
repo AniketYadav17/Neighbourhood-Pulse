@@ -138,7 +138,7 @@ def test_request_shape_pins_grounding_controls():
     client = FakeClient([GOOD, GOOD, GOOD])
     generate_briefs(gap_frame(), client, {})
     kwargs = client.calls[0]
-    assert kwargs["model"] == "gemini-3.5-flash"
+    assert kwargs["model"] == "gemini-2.5-flash-lite"
     assert kwargs["config"]["temperature"] == 0.2
     assert "ONLY the signals" in kwargs["config"]["system_instruction"]
     assert kwargs["config"]["response_mime_type"] == "application/json"
@@ -151,22 +151,23 @@ def test_request_shape_pins_grounding_controls():
     assert set(schema["required"]) == {"headline", "brief", "caveat"}
 
 
-def test_request_shape_budgets_for_thinking_tokens():
-    # gemini-3.5-flash spends max_output_tokens on thinking before the JSON
-    # completion; 400 (the old value) was consumed entirely by thought and
-    # every response hit finish_reason=MAX_TOKENS. Thinking can't be fully
-    # disabled on this model family (no thinking_budget=0 support), only
-    # minimized via thinking_level, so headroom must come from max_output_tokens.
+def test_request_shape_disables_thinking_and_budgets_the_short_completion():
+    # gemini-2.5-flash-lite is thinking_budget-family: 0 fully disables
+    # thinking (unlike gemini-3.x's thinking_level, whose floor is "minimal"
+    # and can never reach true zero) — so no hidden thought tokens can eat
+    # into max_output_tokens the way they did on gemini-3.5-flash (which
+    # needed 4000 for that reason). 800 is ample headroom for the short
+    # headline/brief/caveat JSON completion alone.
     client = FakeClient([GOOD])
     generate_briefs(gap_frame(), client, {}, request_interval_s=0)
     config = client.calls[0]["config"]
-    assert config["max_output_tokens"] == 4000
-    assert config["thinking_config"] == {"thinking_level": "minimal"}
+    assert config["max_output_tokens"] == 800
+    assert config["thinking_config"] == {"thinking_budget": 0}
 
 
 def test_estimate_cost_usd():
-    assert estimate_cost_usd(1_000_000, 0) == 1.50
-    assert estimate_cost_usd(0, 1_000_000) == 9.00
+    assert estimate_cost_usd(1_000_000, 0) == 0.10
+    assert estimate_cost_usd(0, 1_000_000) == 0.40
 
 
 def test_quota_error_retries_then_succeeds(no_sleep):
@@ -223,6 +224,84 @@ def test_persistent_quota_error_skips_hexagon_and_continues(no_sleep):
     assert set(briefs) == {"hex1", "hex2"}  # hex0 skipped, run continued
     assert len(client.calls) == 6  # 4 for hex0 + 1 each for hex1, hex2
     assert no_sleep.count(60.0) == 3  # three quota-retry sleeps, then gave up
+
+
+def test_daily_quota_error_stops_the_whole_run_cleanly(no_sleep):
+    """A 429 whose payload's quotaId contains 'PerDay' means the free-tier
+    daily budget is exhausted for the whole project — sleeping and retrying
+    is pointless (it won't clear until midnight Pacific). The loop must stop
+    immediately, with no retry sleep, keeping whatever briefs were already
+    generated (this is the real failure the fix addresses: quotaId
+    'GenerateRequestsPerDayPerProjectPerModel-FreeTier', quotaValue 20)."""
+
+    class FakeDailyQuotaError(Exception):
+        code = 429
+        # Duck-types google.genai.errors.APIError's `.details` (parsed
+        # response JSON), shaped like a real QuotaFailure payload.
+        details = {
+            "error": {
+                "code": 429,
+                "status": "RESOURCE_EXHAUSTED",
+                "details": [
+                    {
+                        "@type": "type.googleapis.com/google.rpc.QuotaFailure",
+                        "violations": [
+                            {
+                                "quotaId": ("GenerateRequestsPerDayPerProjectPerModel-FreeTier"),
+                                "quotaValue": "20",
+                            }
+                        ],
+                    }
+                ],
+            }
+        }
+
+    class DailyQuotaModels:
+        def __init__(self, outer):
+            self.outer = outer
+
+        def generate_content(self, **kwargs):
+            self.outer.calls.append(kwargs)
+            if len(self.outer.calls) == 1:
+                return fake_response(GOOD)  # hex0 succeeds
+            raise FakeDailyQuotaError("RESOURCE_EXHAUSTED")  # hex1 hits the daily cap
+
+    class DailyQuotaClient:
+        def __init__(self):
+            self.calls = []
+            self.models = DailyQuotaModels(self)
+
+    client = DailyQuotaClient()
+    briefs = generate_briefs(gap_frame(), client, {}, request_interval_s=0)
+    assert set(briefs) == {"hex0"}  # the earlier success is retained
+    assert len(client.calls) == 2  # hex0 succeeded; hex1's daily 429 stopped the run
+    assert 60.0 not in no_sleep  # no retry sleep for a daily-quota error
+
+
+def test_daily_quota_id_with_unrecognized_shape_falls_back_to_retry(no_sleep):
+    """If a 429's payload doesn't carry a recognizable quotaId (e.g. no
+    `.details` at all, like FakeQuotaError), the existing per-minute
+    retry-then-skip behavior must still apply — 'can't tell' is not 'not a
+    daily quota'."""
+
+    class AlwaysQuotaErrorModels:
+        def __init__(self, outer):
+            self.outer = outer
+
+        def generate_content(self, **kwargs):
+            self.outer.calls.append(kwargs)
+            raise FakeQuotaError("rate limited")
+
+    class AlwaysQuotaErrorClient:
+        def __init__(self):
+            self.calls = []
+            self.models = AlwaysQuotaErrorModels(self)
+
+    client = AlwaysQuotaErrorClient()
+    briefs = generate_briefs(gap_frame().iloc[[0]], client, {}, request_interval_s=0)
+    assert briefs == {}  # hex0 skipped after exhausting retries, not a clean stop
+    assert len(client.calls) == 4  # 1 initial + 3 retries (QUOTA_MAX_RETRIES)
+    assert no_sleep.count(60.0) == 3  # ordinary per-minute retry sleeps happened
 
 
 def test_non_quota_api_error_skips_hexagon_immediately(no_sleep):
