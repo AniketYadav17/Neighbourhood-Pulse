@@ -100,12 +100,12 @@ with right:
     c1.metric(
         "Median sale price",
         fmt_gbp(row["median_price"]),
-        help=f"£{row['median_price']:,.0f} — median of actual sales, 2021–2025",
+        help=f"£{row['median_price']:,.0f}: median of actual sales, 2021–2025",
     )
     c2.metric(
         "Model estimate",
         fmt_gbp(row["pred_price"]),
-        help=f"£{row['pred_price']:,.0f} — what the model expects from activity signals",
+        help=f"£{row['pred_price']:,.0f}: what the model expects from activity signals",
     )
     c3.metric("Price vs estimate", f"{row['valuation_gap'] * 100:+.1f}%")
     st.caption(

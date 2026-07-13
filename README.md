@@ -90,7 +90,7 @@ curl -X POST localhost:8000/predict -H "content-type: application/json" \
 | Growth spread, most- vs least-underpriced fifth | +7.3% vs −1.5% |
 
 The strongest predictor, after accounting for how central an area is, is the
-share of planning applications that change a building's use — the "shops
+share of planning applications that change a building's use: the "shops
 becoming cafés or flats" signal.
 
 ## What this can and cannot tell you
