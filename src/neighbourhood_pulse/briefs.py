@@ -11,6 +11,18 @@ spend. The SDK's HttpRetryOptions handles transient 408/5xx backoff; free-tier
 per-hexagon with a longer sleep. A 429 whose *daily* quota is exhausted
 instead stops the whole run cleanly (no point retrying within a sleep loop
 against a quota that only resets at midnight Pacific) — see generate_briefs.
+
+The configured model itself is a moving target — Google has deprecated it
+three times in eight days — so BRIEFS_MODEL is only ever a default: `pulse
+briefs --model NAME` overrides it end to end (run_briefs -> generate_briefs ->
+the per-brief "model" field) with no code edit needed. A 404 on the model is
+treated as a fatal configuration error rather than a per-hexagon fluke, since
+every subsequent call would fail identically: a cheap preflight checks the
+model before the run starts (see _model_available) and, as a backstop, the
+generation loop itself aborts immediately on a 404 (see generate_briefs) —
+either way the run stops with one clear message instead of 404ing through
+every remaining hexagon.
+
 Needs GEMINI_API_KEY (or GOOGLE_API_KEY) set in the environment — never
 hardcoded.
 """
@@ -123,6 +135,16 @@ def _is_quota_error(exc: Exception) -> bool:
     return getattr(exc, "code", None) == 429
 
 
+def _is_not_found_error(exc: Exception) -> bool:
+    """Duck-types the SDK's 404 (google.genai.errors.ClientError), the same
+    way _is_quota_error duck-types 429s. A 404 on a model-scoped call means
+    the configured model doesn't exist for this project — deprecated, not
+    (yet) available, or simply mistyped — so every subsequent call with the
+    same model would fail identically. That makes it a fatal configuration
+    error, unlike an ordinary per-hexagon API hiccup."""
+    return getattr(exc, "code", None) == 404
+
+
 def _find_quota_id(payload: object) -> str | None:
     """Recursively hunts a nested error payload for a QuotaFailure
     violation's `quotaId`, without assuming exact nesting. Google's 429 body
@@ -166,13 +188,16 @@ def generate_briefs(
     max_cost_usd: float = BRIEFS_MAX_COST_USD,
     save=None,
     request_interval_s: float = BRIEFS_MIN_REQUEST_INTERVAL_S,
+    model: str = BRIEFS_MODEL,
 ) -> dict:
     """Fill missing briefs; mutates and returns `briefs`.
 
     Resumable: cached hexagons are skipped. `save`, if given, is called with the
     dict after every accepted brief so partial progress survives any crash.
     Schema-invalid or refused responses are skipped, never fatal — a rerun
-    retries only the gaps.
+    retries only the gaps. `model` (default BRIEFS_MODEL) is recorded on every
+    accepted brief so a run generated with `pulse briefs --model X` is
+    traceable per-hexagon, not just via the config default.
 
     Requests are paced at least `request_interval_s` apart (free-tier RPM
     limits) measuring from the previous call's start, so a slow call doesn't
@@ -190,6 +215,15 @@ def generate_briefs(
     already saved per-brief, so a rerun tomorrow continues from where this
     one stopped. If the quotaId can't be determined from the error's payload,
     this falls back to the ordinary per-minute retry-then-skip behavior.
+
+    A second, unconditional exception: a 404 on `model` means the model
+    itself is unavailable (deprecated, not yet available to new users, or
+    mistyped) — every remaining hexagon would fail identically, so this also
+    stops the whole run immediately (see _is_not_found_error), the same
+    clean-stop shape as the daily-quota case. `run_briefs`'s preflight
+    (_model_available) normally catches this before the loop even starts;
+    this is the backstop for whenever that preflight is bypassed or the model
+    becomes unavailable mid-run.
     """
     spent = 0.0
     last_call_start = None
@@ -208,6 +242,7 @@ def generate_briefs(
         response = None
         quota_retries = 0
         daily_quota_hit = False
+        model_not_found = False
         while True:
             if last_call_start is not None and request_interval_s > 0:
                 wait = request_interval_s - (time.monotonic() - last_call_start)
@@ -216,7 +251,7 @@ def generate_briefs(
             last_call_start = time.monotonic()
             try:
                 response = client.models.generate_content(
-                    model=BRIEFS_MODEL,
+                    model=model,
                     contents=build_user_prompt(row),
                     config={
                         "system_instruction": SYSTEM_PROMPT,
@@ -229,6 +264,24 @@ def generate_briefs(
                 )
             except Exception as e:
                 response = None
+                if _is_not_found_error(e):
+                    logger.error(
+                        "%s: model %r not found (%s). Every remaining hexagon would "
+                        "fail identically, so this is a configuration error, not a "
+                        "per-hexagon fluke — stopping now instead of churning through "
+                        "the rest. This usually means the model has been deprecated "
+                        "or is no longer available to new users. Pass a current model "
+                        "with `pulse briefs --model <name>` (see "
+                        "https://ai.google.dev/gemini-api/docs/models for current "
+                        "names). %d/%d briefs already generated are saved.",
+                        h3_index,
+                        model,
+                        getattr(e, "message", None) or e,
+                        len(briefs),
+                        len(hexes),
+                    )
+                    model_not_found = True
+                    break
                 if _is_quota_error(e):
                     quota_id = _daily_quota_id(e)
                     if quota_id is not None and "PerDay" in quota_id:
@@ -265,6 +318,9 @@ def generate_briefs(
             else:
                 break
 
+        if model_not_found:
+            break
+
         if daily_quota_hit:
             break
 
@@ -296,7 +352,7 @@ def generate_briefs(
         except (json.JSONDecodeError, ValidationError) as e:
             logger.warning("%s: schema-invalid response skipped (%s).", h3_index, e)
             continue
-        briefs[h3_index] = {**brief.model_dump(), "model": BRIEFS_MODEL}
+        briefs[h3_index] = {**brief.model_dump(), "model": model}
         if save is not None:
             save(briefs)
         logger.info(
@@ -317,11 +373,63 @@ def write_briefs_file(briefs: dict, path: str = BRIEFS_PATH) -> None:
         json.dump(briefs, f, indent=2, ensure_ascii=False)
 
 
-def run_briefs(force: bool = False) -> dict:
-    """CLI entry: gap artifact -> briefs.json (needs GEMINI_API_KEY or GOOGLE_API_KEY)."""
+def _model_available(client, model: str) -> bool:
+    """Cheap preflight: confirms `model` exists before generate_briefs spends
+    even one call of the per-hexagon budget on it. Returns False (after
+    logging one clear error, plus a best-effort list of currently-available
+    flash-family models) if `model` 404s — every generate_content call would
+    fail identically, so the caller should not loop at all. Any other
+    exception (network blip, auth hiccup, ...) is inconclusive, not a
+    confirmed problem with `model` itself, so it's treated as "go ahead" —
+    generate_briefs's own per-call handling (and the SDK's built-in retries)
+    is the unchanged backstop for those, same as before this preflight
+    existed."""
+    try:
+        client.models.get(model=model)
+    except Exception as e:
+        if not _is_not_found_error(e):
+            return True
+        logger.error(
+            "%s: model not found (%s). This usually means the model has been "
+            "deprecated or is no longer available to new users. Pass a "
+            "current model with `pulse briefs --model <name>` (see "
+            "https://ai.google.dev/gemini-api/docs/models for current names).",
+            model,
+            getattr(e, "message", None) or e,
+        )
+        try:
+            available = sorted(
+                {
+                    m.name.removeprefix("models/")
+                    for m in client.models.list()
+                    if m.name and "flash" in m.name
+                }
+            )
+        except Exception as list_exc:
+            logger.warning("Could not list available models (best effort): %s", list_exc)
+        else:
+            logger.error(
+                "Flash-family models currently available: %s",
+                ", ".join(available) if available else "(none found)",
+            )
+        return False
+    return True
+
+
+def run_briefs(force: bool = False, model: str | None = None) -> dict:
+    """CLI entry: gap artifact -> briefs.json (needs GEMINI_API_KEY or GOOGLE_API_KEY).
+
+    `model` (default None) overrides BRIEFS_MODEL for this run only — the
+    override behind `pulse briefs --model NAME`, so a model deprecation can be
+    worked around without editing config.py. A cheap preflight
+    (_model_available) checks the model before the loop starts; on a 404 it
+    logs a clear diagnostic and this returns immediately without looping,
+    leaving whatever was already cached untouched.
+    """
     from google import genai  # deferred: serving and app code paths never import the SDK
     from google.genai import types
 
+    model = model or BRIEFS_MODEL
     gap = pd.read_parquet(VALUATION_GAP_PATH)
     hexes = select_brief_hexagons(gap)
     briefs = {} if force else load_briefs_file()
@@ -331,7 +439,9 @@ def run_briefs(force: bool = False) -> dict:
         attempts=5, initial_delay=1.0, max_delay=60.0, exp_base=2.0
     )
     client = genai.Client(http_options=types.HttpOptions(retry_options=retry_options))
-    generate_briefs(hexes, client, briefs, save=write_briefs_file)
+    if not _model_available(client, model):
+        return briefs
+    generate_briefs(hexes, client, briefs, save=write_briefs_file, model=model)
     write_briefs_file(briefs)
     logger.info("%s: %s briefs.", BRIEFS_PATH, len(briefs))
     return briefs

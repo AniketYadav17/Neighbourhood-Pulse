@@ -6,7 +6,7 @@ import os
 import sys
 
 
-def _run_briefs(force: bool) -> None:
+def _run_briefs(force: bool, model: str | None = None) -> None:
     if not (os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")):
         logging.getLogger(__name__).error(
             "GEMINI_API_KEY (or GOOGLE_API_KEY) is not set — briefs generation calls the "
@@ -15,7 +15,7 @@ def _run_briefs(force: bool) -> None:
         raise SystemExit(1)
     from neighbourhood_pulse.briefs import run_briefs
 
-    run_briefs(force=force)
+    run_briefs(force=force, model=model)
 
 
 def setup_logging(verbose: bool = False) -> None:
@@ -38,6 +38,12 @@ def main(argv: list[str] | None = None) -> None:
     )
     briefs_parser = sub.add_parser("briefs", help="generate LLM neighbourhood briefs (Gemini API)")
     briefs_parser.add_argument("--force", action="store_true", help="regenerate all briefs")
+    briefs_parser.add_argument(
+        "--model",
+        default=None,
+        help="override the configured Gemini model (default: BRIEFS_MODEL in config.py) — "
+        "e.g. after Google deprecates the configured model, with no code change needed",
+    )
     all_parser = sub.add_parser("all", help="ingest, transform, train, briefs — end to end")
     all_parser.add_argument("--force", action="store_true", help="rebuild even if artifacts exist")
     args = parser.parse_args(argv)
@@ -64,7 +70,7 @@ def main(argv: list[str] | None = None) -> None:
             "Done. R² linear=%.3f xgboost=%.3f", metrics["r2_linear"], metrics["r2_xgboost"]
         )
     elif args.command == "briefs":
-        _run_briefs(force=args.force)
+        _run_briefs(force=args.force, model=args.model)
     elif args.command == "all":
         from neighbourhood_pulse.ingestion import DataIngestion, IngestionError
         from neighbourhood_pulse.pipeline import run_train

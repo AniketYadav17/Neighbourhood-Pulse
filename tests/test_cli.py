@@ -85,9 +85,27 @@ def test_briefs_dispatches_with_key(monkeypatch):
     monkeypatch.setenv("GEMINI_API_KEY", "test-key")
     called = {}
 
-    def fake_run_briefs(force):
-        called.setdefault("force", force)
+    def fake_run_briefs(force, model=None):
+        called["force"] = force
+        called["model"] = model
 
     monkeypatch.setattr(briefs_module, "run_briefs", fake_run_briefs)
     cli.main(["briefs", "--force"])
-    assert called == {"force": True}
+    assert called == {"force": True, "model": None}  # no --model: config default applies
+
+
+def test_briefs_dispatches_with_model_override(monkeypatch):
+    """`--model` decouples a run from BRIEFS_MODEL without a code edit — the
+    CLI flag must reach run_briefs's `model` kwarg untouched."""
+    import neighbourhood_pulse.briefs as briefs_module
+
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+    called = {}
+
+    def fake_run_briefs(force, model=None):
+        called["force"] = force
+        called["model"] = model
+
+    monkeypatch.setattr(briefs_module, "run_briefs", fake_run_briefs)
+    cli.main(["briefs", "--model", "gemini-9.9-flash-lite"])
+    assert called == {"force": False, "model": "gemini-9.9-flash-lite"}
