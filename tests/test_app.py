@@ -97,3 +97,25 @@ def test_fmt_gbp_compact():
     assert shared.fmt_gbp(999_500) == "£1.00M"  # never renders as £1000k
     assert shared.fmt_gbp(850) == "£850"
     assert shared.fmt_gbp(1_000) == "£1k"
+
+
+def test_app_explore_filters_moved_out_of_sidebar():
+    from streamlit.testing.v1 import AppTest
+
+    at = AppTest.from_file("app/app.py", default_timeout=60)
+    at.run()
+    assert not at.exception
+    assert [m.label for m in at.multiselect] == ["Borough"]
+    assert [s.label for s in at.selectbox] == ["Show"]
+    assert not at.sidebar.multiselect  # sidebar is navigation only now
+    assert not at.slider  # raw gap-range slider is gone
+
+
+def test_app_explore_gap_preset_filters():
+    from streamlit.testing.v1 import AppTest
+
+    at = AppTest.from_file("app/app.py", default_timeout=60)
+    at.run()
+    undervalued = [o for o in at.selectbox[0].options if o.startswith("Undervalued")]
+    at.selectbox[0].select(undervalued[0]).run()
+    assert not at.exception
