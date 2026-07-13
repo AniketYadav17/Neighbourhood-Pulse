@@ -66,8 +66,8 @@ st.subheader("How big are the gaps?")
 gap_pct = (gap["valuation_gap"] * 100).clip(-75, 100)
 bins = pd.cut(gap_pct, bins=range(-80, 101, 10))
 hist = gap_pct.groupby(bins, observed=False).size()
-hist.index = [f"{int(iv.left)} to {int(iv.right)}" for iv in hist.index]
-st.bar_chart(hist.rename("areas"), x_label="price vs estimate (%)", y_label="areas")
+hist.index = [int(iv.mid) for iv in hist.index]
+st.bar_chart(hist.rename("areas"), x_label="price vs estimate (%, bin midpoint)", y_label="areas")
 st.caption(
     "Gaps of 30 to 40% either way are common: the model is a rough guide, not a "
     "valuation. A handful of extreme areas beyond this range are grouped into the "
