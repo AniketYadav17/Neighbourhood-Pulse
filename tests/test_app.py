@@ -88,6 +88,8 @@ def test_app_smoke_model_and_methodology_pages():
         at.switch_page(page)
         at.run()
         assert not at.exception, page
+        body = " ".join(m.value for m in at.markdown)
+        assert "model" in body.lower(), page  # plain-language copy present
 
 
 def test_fmt_gbp_compact():
