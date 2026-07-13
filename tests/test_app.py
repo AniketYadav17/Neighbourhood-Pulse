@@ -88,3 +88,12 @@ def test_app_smoke_model_and_methodology_pages():
         at.switch_page(page)
         at.run()
         assert not at.exception, page
+
+
+def test_fmt_gbp_compact():
+    assert shared.fmt_gbp(675_000) == "£675k"
+    assert shared.fmt_gbp(1_239_709) == "£1.24M"
+    assert shared.fmt_gbp(999_499) == "£999k"
+    assert shared.fmt_gbp(999_500) == "£1.00M"  # never renders as £1000k
+    assert shared.fmt_gbp(850) == "£850"
+    assert shared.fmt_gbp(1_000) == "£1k"

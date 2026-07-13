@@ -88,3 +88,15 @@ def reprice(features: dict) -> float:
         response.raise_for_status()
         return float(response.json()["predicted_price"])
     return float(predict_price(load_model(), pd.DataFrame([features]))[0])
+
+
+def fmt_gbp(value: float) -> str:
+    """Compact £ for narrow panels: 675000 -> '£675k', 1239709 -> '£1.24M'.
+
+    Switches to millions at £999,500 so nothing ever renders as '£1000k'.
+    """
+    if value >= 999_500:
+        return f"£{value / 1e6:.2f}M"
+    if value >= 1_000:
+        return f"£{value / 1e3:.0f}k"
+    return f"£{value:.0f}"
