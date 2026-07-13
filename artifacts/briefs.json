@@ -1,0 +1,302 @@
+{
+  "88194ad16bfffff": {
+    "headline": "Westminster property significantly undervalued relative to predictive market signals",
+    "brief": "With a median sale price of £740,000 against a predicted value of over £2.8 million, this area shows a substantial negative valuation gap of 73.7%. Planning activity is accelerating with a velocity of 1.28, though change-of-use applications remain minimal at 0.6%.",
+    "caveat": "The large valuation gap may reflect localized market anomalies or specific property types not fully captured by the broader predictive model.",
+    "model": "gemini-3.1-flash-lite"
+  },
+  "88194ad259fffff": {
+    "headline": "Significant valuation discount identified in Newham property market",
+    "brief": "Newham properties are currently trading at a 70.9% discount relative to signal-implied valuations, suggesting a substantial price gap. Planning activity remains steady with a velocity of 1.04, though the low density of local amenities and distance from central London may influence current market pricing.",
+    "caveat": "The valuation gap may be skewed by specific local housing stock characteristics not fully captured by the broad signal-implied model.",
+    "model": "gemini-3.1-flash-lite"
+  },
+  "88194ad18bfffff": {
+    "headline": "Croydon property significantly undervalued relative to predictive market signals",
+    "brief": "The current median sale price of £450,000 sits substantially below the model-predicted value of over £1.5 million. Planning activity shows a decelerating trend with a velocity of 0.79 and a total absence of change-of-use applications, suggesting limited immediate structural transformation in this specific area.",
+    "caveat": "The model-predicted price may be skewed by broader borough-wide data that does not account for the specific lack of local amenities or infrastructure in this hexagon.",
+    "model": "gemini-3.1-flash-lite"
+  },
+  "88194ad10dfffff": {
+    "headline": "Wandsworth property significantly undervalued relative to predictive market signals",
+    "brief": "Despite a proximity of 3.0 km to central London, current median sale prices in this area are 67.6% lower than model-predicted valuations. Planning activity remains steady but slightly below historical trends, with a low volume of change-of-use applications indicating limited structural redevelopment.",
+    "caveat": "The significant valuation gap may reflect localized factors or data discrepancies not captured by the broader predictive model.",
+    "model": "gemini-3.1-flash-lite"
+  },
+  "88194e68bdfffff": {
+    "headline": "Newham property significantly undervalued relative to predictive market signals",
+    "brief": "With a median sale price of £442,000 against a model-implied value of over £1.2 million, this area shows a substantial negative valuation gap. Planning activity is accelerating at a rate of 1.12, though the lack of local cafe amenities suggests limited current commercial infrastructure.",
+    "caveat": "The model-implied price may be skewed by regional data that does not account for the specific lack of local amenities in this hexagon.",
+    "model": "gemini-3.1-flash-lite"
+  },
+  "88194adadbfffff": {
+    "headline": "Wandsworth property significantly undervalued relative to predictive market signals",
+    "brief": "With a median sale price of £499,858 against a predicted value of over £1.3 million, this area shows a substantial negative valuation gap of 63%. Planning activity remains steady with a velocity of 1.04, though the lack of change-of-use applications suggests limited structural redevelopment in the immediate vicinity.",
+    "caveat": "The model may overstate value if the specific hexagon lacks the high-end amenities or transport connectivity typically associated with the predicted price point.",
+    "model": "gemini-3.1-flash-lite"
+  },
+  "88194ad1d9fffff": {
+    "headline": "Lewisham property significantly undervalued relative to predictive market signals",
+    "brief": "With a median sale price of £427,500, this area is priced 62.6% below its signal-implied valuation of over £1.1 million. Planning activity is currently decelerating, with a velocity of 0.70 and no change-of-use applications recorded.",
+    "caveat": "The predictive model may be overestimating value due to the lack of local amenities like cafes and the area's distance from central London.",
+    "model": "gemini-3.1-flash-lite"
+  },
+  "88194ac351fffff": {
+    "headline": "Croydon property significantly undervalued relative to predictive market signals",
+    "brief": "The area shows a substantial valuation gap of -60.5%, with actual median sale prices trailing significantly behind the model-implied value of £709,272. Planning activity remains steady but modest, with no change-of-use applications and a velocity of 0.93, suggesting limited structural transformation in the immediate vicinity.",
+    "caveat": "The absence of local amenities such as cafes may suppress market demand, potentially explaining why the actual price remains lower than the model's prediction.",
+    "model": "gemini-3.1-flash-lite"
+  },
+  "88194ac20dfffff": {
+    "headline": "Croydon property significantly undervalued relative to predictive market signals",
+    "brief": "The area shows a substantial valuation gap of -58.7%, with actual median sale prices trailing far behind the model-predicted value of £870,854. Planning activity is currently slowing, with a velocity of 0.86 and no change-of-use applications, suggesting limited immediate transformation in the local built environment.",
+    "caveat": "The absence of local amenities like cafes may contribute to the lower price point, which the predictive model might not fully account for.",
+    "model": "gemini-3.1-flash-lite"
+  },
+  "88195da68dfffff": {
+    "headline": "Haringey property significantly undervalued relative to predictive market signals",
+    "brief": "This Haringey location shows a substantial negative valuation gap of 56.5%, with actual sale prices trailing far behind the model-predicted value of £1.43 million. Planning activity remains steady with 347 applications over five years, though the lack of local cafes and minimal change-of-use activity suggests limited commercial development in this specific area.",
+    "caveat": "The model's high price prediction may be skewed by broader borough-wide trends that do not account for the specific lack of local amenities in this hexagon.",
+    "model": "gemini-3.1-flash-lite"
+  },
+  "88194ad069fffff": {
+    "headline": "Southwark property significantly undervalued relative to predictive market signals",
+    "brief": "The current median sale price of £500,000 sits 55.6% below the model-predicted value of £1,127,384, suggesting a substantial valuation gap. Planning activity is currently decelerating, with a velocity of 0.75 and a lack of local cafe infrastructure, indicating limited recent commercial or residential development momentum.",
+    "caveat": "The model may be overestimating value if the specific hexagon lacks the amenities or transport connectivity typically associated with higher-priced areas in Southwark.",
+    "model": "gemini-3.1-flash-lite"
+  },
+  "88194ad0e3fffff": {
+    "headline": "Bromley property significantly undervalued relative to predictive market signals",
+    "brief": "The area shows a substantial negative valuation gap of 55.4%, with actual median prices trailing the model-predicted value of £930,038. Planning activity remains steady with 105 total applications over five years, though the absence of change-of-use projects and local cafes suggests limited commercial development.",
+    "caveat": "The model may be overestimating value if the specific hexagon lacks the infrastructure or amenities typically associated with higher-priced Bromley locations.",
+    "model": "gemini-3.1-flash-lite"
+  },
+  "88195da4a3fffff": {
+    "headline": "Westminster property significantly undervalued relative to predictive market signals",
+    "brief": "With a median sale price of £750,000 against a predicted value of over £1.6 million, this area shows a substantial negative valuation gap of 54.6%. Planning activity remains steady with 262 applications in the last year, suggesting consistent development interest despite the current price discrepancy.",
+    "caveat": "The predictive model may not fully account for specific hyper-local constraints or building-specific factors that suppress market values in this particular hexagon.",
+    "model": "gemini-3.1-flash-lite"
+  },
+  "88194ad06dfffff": {
+    "headline": "Southwark property significantly undervalued relative to predictive market signals",
+    "brief": "With a valuation gap of -53.1%, current sale prices in this Southwark area are substantially lower than model-predicted values. Planning activity has slowed, with a velocity of 0.66 and a lack of local cafe amenities, suggesting limited recent commercial development.",
+    "caveat": "The model may fail to account for specific hyper-local constraints or land-use restrictions that suppress property values despite broader regional trends.",
+    "model": "gemini-3.1-flash-lite"
+  },
+  "88194ad0e9fffff": {
+    "headline": "Lewisham property significantly undervalued relative to predictive market signals",
+    "brief": "The area shows a substantial negative valuation gap of 51.9%, with actual sale prices trailing model predictions by over £330,000. Planning activity remains steady with 100 applications over five years, though the lack of local cafe amenities suggests limited commercial development in this specific hexagon.",
+    "caveat": "The model may fail to account for specific local infrastructure constraints or environmental factors that suppress property values despite broader borough trends.",
+    "model": "gemini-3.1-flash-lite"
+  },
+  "88194e6d6dfffff": {
+    "headline": "Newham property significantly undervalued relative to predictive market signals",
+    "brief": "With a median sale price of £386,000 against a model-implied value of £777,919, this area shows a substantial negative valuation gap of 50.4%. Planning activity is accelerating slightly with a velocity of 1.13, though the low density of cafes and limited change-of-use applications suggest a stable rather than rapidly transforming urban environment.",
+    "caveat": "The model-implied valuation may be skewed by broader borough-wide data that does not account for the specific hyper-local constraints of this 13.5 km distance from central London.",
+    "model": "gemini-3.1-flash-lite"
+  },
+  "88194ac263fffff": {
+    "headline": "Croydon property significantly undervalued relative to predictive market signals",
+    "brief": "With a median sale price of £280,000, this area is trading at a 50.2% discount compared to its signal-implied valuation of £562,681. Planning activity has slowed considerably, with a velocity of 0.53 and only 30 applications recorded in the last twelve months.",
+    "caveat": "The significant valuation gap may reflect localized structural issues or market stagnation not fully captured by the predictive model.",
+    "model": "gemini-3.1-flash-lite"
+  },
+  "88194adae5fffff": {
+    "headline": "Wandsworth property significantly undervalued relative to predictive market signals",
+    "brief": "With a median sale price of £588,750, this area trades at a 49.7% discount compared to its signal-implied valuation of over £1.1 million. Planning activity remains steady but modest, with no change-of-use applications and a lack of local cafe amenities, suggesting limited commercial development in this specific hexagon.",
+    "caveat": "The valuation gap may be overstated if the predictive model does not fully account for the specific lack of local amenities and distance from the city centre.",
+    "model": "gemini-3.1-flash-lite"
+  },
+  "88194e68c5fffff": {
+    "headline": "Redbridge property significantly undervalued relative to predictive market signals",
+    "brief": "The area shows a substantial valuation gap of -49.1%, with actual median prices trailing behind model-predicted values. Planning activity is accelerating at a rate of 1.21, supported by 56 applications in the last year, though the total absence of cafes suggests limited local commercial infrastructure.",
+    "caveat": "The model may be overestimating value if the lack of local amenities and cafes reflects a structural limitation on residential desirability.",
+    "model": "gemini-3.1-flash-lite"
+  },
+  "88194e68bbfffff": {
+    "headline": "Newham property significantly undervalued relative to predictive market signals",
+    "brief": "The area shows a substantial valuation gap of -49.0%, with actual sale prices trailing significantly behind model-predicted values. Planning activity is accelerating, evidenced by a velocity of 1.76 and a recent uptick in applications, despite a complete absence of local cafe amenities.",
+    "caveat": "The lack of local amenities and distance from central London may justify the lower price point regardless of the model's predictive output.",
+    "model": "gemini-3.1-flash-lite"
+  },
+  "88194ad08bfffff": {
+    "headline": "Bromley property significantly undervalued relative to predictive market signals",
+    "brief": "With a median sale price of £445,000, this area trades at a 48.5% discount compared to its signal-implied valuation of £864,737. Planning activity remains steady with a velocity of 0.91 and no change-of-use applications, though the complete absence of cafes suggests limited local commercial infrastructure.",
+    "caveat": "The significant valuation gap may be skewed by a lack of local amenities or specific site-level constraints not captured by the broader predictive model.",
+    "model": "gemini-3.1-flash-lite"
+  },
+  "88194ac367fffff": {
+    "headline": "Merton property significantly undervalued relative to predictive market signals",
+    "brief": "With a median sale price of £440,000, this area is trading at a 48.4% discount compared to its signal-implied valuation of £853,090. Planning activity remains modest with a velocity of 0.84 and minimal change-of-use applications, suggesting limited immediate redevelopment pressure.",
+    "caveat": "The lack of local amenities such as cafes may suppress market demand and explain the persistent valuation gap.",
+    "model": "gemini-3.1-flash-lite"
+  },
+  "88194ad13bfffff": {
+    "headline": "Lambeth property values significantly trail model-predicted price benchmarks",
+    "brief": "Lambeth exhibits a substantial valuation gap of 48.4%, with actual median sale prices sitting well below the model-implied prediction of £1.31 million. Planning activity has slowed, with a velocity of 0.51 and minimal change-of-use applications, suggesting limited recent development momentum in this specific area.",
+    "caveat": "The model-implied price may be skewed by broader borough-wide data that does not account for the specific hyper-local characteristics of this hexagon.",
+    "model": "gemini-3.1-flash-lite"
+  },
+  "88194ad239fffff": {
+    "headline": "Greenwich property significantly undervalued relative to local planning and amenity signals",
+    "brief": "The area shows a substantial valuation gap of -48.2%, with actual sale prices trailing behind model-predicted values. Increased planning activity, indicated by a velocity of 1.15 and 98 applications in the last year, suggests rising development interest despite the current price discrepancy.",
+    "caveat": "The valuation gap may be skewed if the model does not fully account for specific local constraints or the high density of independent cafes relative to the broader borough profile.",
+    "model": "gemini-3.1-flash-lite"
+  },
+  "88194ad1edfffff": {
+    "headline": "Lambeth property significantly undervalued relative to predictive market signals",
+    "brief": "This Lambeth location shows a substantial valuation gap of 47.9%, with actual sale prices trailing significantly behind the model-predicted value of £883,126. Planning activity remains steady but slightly below historical trends, with a low volume of change-of-use applications and limited local cafe infrastructure.",
+    "caveat": "The large valuation gap may reflect unobserved local factors or data anomalies rather than an immediate investment opportunity.",
+    "model": "gemini-3.1-flash-lite"
+  },
+  "88194ac35dfffff": {
+    "headline": "Croydon property significantly undervalued relative to predictive market signals",
+    "brief": "The area shows a substantial valuation gap of 47.8%, with actual median prices trailing significantly behind the model-predicted value of £751,485. Planning activity has slowed, with a velocity of 0.69 and no change-of-use applications, suggesting limited recent development momentum.",
+    "caveat": "The model's predictive accuracy may be limited by the absence of local amenities such as cafes and the specific nature of the local housing stock.",
+    "model": "gemini-3.1-flash-lite"
+  },
+  "88194ad1e9fffff": {
+    "headline": "Lambeth property significantly undervalued relative to predictive market signals",
+    "brief": "The current median sale price of £512,500 sits 46.6% below the model-predicted valuation of £960,474. Planning activity shows a slight deceleration with a velocity of 0.81 and minimal change-of-use applications, suggesting limited immediate redevelopment pressure in this specific area.",
+    "caveat": "The absence of local amenities like cafes may suppress market demand and explain the valuation gap regardless of broader predictive signals.",
+    "model": "gemini-3.1-flash-lite"
+  },
+  "88195da609fffff": {
+    "headline": "Enfield property significantly undervalued relative to predictive market signals",
+    "brief": "The area shows a substantial valuation gap of 46.5%, with actual median sale prices trailing behind model-predicted values. Planning activity remains steady with 226 applications over five years, though the lack of change-of-use applications suggests limited structural redevelopment in this specific hexagon.",
+    "caveat": "The model may overstate value if the local housing stock lacks the premium characteristics typically associated with the predicted price point.",
+    "model": "gemini-3.1-flash-lite"
+  },
+  "88195da4bdfffff": {
+    "headline": "Westminster property significantly undervalued relative to predictive market signals",
+    "brief": "The area shows a substantial -46.1% valuation gap, with actual median sale prices trailing the model's £1.67 million prediction. Planning activity remains steady with a velocity of 1.01, supported by a high volume of applications and a strong presence of independent cafes.",
+    "caveat": "The large valuation gap may reflect specific local constraints or property characteristics not fully captured by the broader predictive model.",
+    "model": "gemini-3.1-flash-lite"
+  },
+  "88194e6b33fffff": {
+    "headline": "Waltham Forest property significantly undervalued relative to predictive market signals",
+    "brief": "The area exhibits a substantial negative valuation gap of 45.8%, with actual sale prices trailing model predictions by over £450,000. Planning activity has slowed to 62% of historical velocity, and the absence of local cafes suggests limited immediate commercial development.",
+    "caveat": "The model may be overestimating value due to the lack of local amenities and the significant distance from central London.",
+    "model": "gemini-3.1-flash-lite"
+  },
+  "88194ad1e5fffff": {
+    "headline": "Lambeth property significantly undervalued relative to predictive market signals",
+    "brief": "With a median sale price of £675,000, this area is trading at a 45.6% discount compared to its signal-implied valuation of £1.24 million. Planning activity has slowed, with a velocity of 0.64 and only 35 applications recorded in the last year, suggesting limited immediate development pressure.",
+    "caveat": "The significant valuation gap may reflect unobserved local constraints or data discrepancies rather than genuine investment potential.",
+    "model": "gemini-3.1-flash-lite"
+  },
+  "88194e69bbfffff": {
+    "headline": "Tower Hamlets property significantly undervalued relative to predictive market signals",
+    "brief": "The area shows a substantial -45.2% valuation gap, with actual median prices trailing behind signal-implied projections. Planning activity remains steady with a velocity of 1.05 and a low concentration of change-of-use applications, suggesting stable development patterns.",
+    "caveat": "The predictive model may not fully account for the specific hyper-local market dynamics or the limited density of independent cafe amenities in this particular hexagon.",
+    "model": "gemini-3.1-flash-lite"
+  },
+  "88194ad1adfffff": {
+    "headline": "Wandsworth property significantly undervalued relative to predictive market signals",
+    "brief": "The current median sale price of £462,000 sits 45% below the model-predicted value of £839,684, suggesting a substantial valuation gap. Planning activity remains steady with a velocity of 1.12, though the area shows limited local amenity density with only one cafe.",
+    "caveat": "The model may overestimate value if the specific hexagon lacks the infrastructure or connectivity typically associated with higher-priced Wandsworth locations.",
+    "model": "gemini-3.1-flash-lite"
+  },
+  "88195da5bbfffff": {
+    "headline": "Hammersmith & Fulham property significantly undervalued relative to predictive market signals",
+    "brief": "This area is currently trading at a 44.9% discount compared to its model-implied valuation of over £1 million. While planning activity has accelerated with a velocity of 1.37, the lack of local cafe amenities and zero change-of-use applications suggest limited commercial or lifestyle-driven development in this specific hexagon.",
+    "caveat": "The model may be overestimating value by failing to account for the specific lack of local infrastructure and amenities within this immediate vicinity.",
+    "model": "gemini-3.1-flash-lite"
+  },
+  "88194ad05dfffff": {
+    "headline": "Lewisham property significantly undervalued relative to predictive market signals",
+    "brief": "With a median sale price of £450,000 against a model-predicted value of £815,478, this area shows a substantial negative valuation gap of 44.8%. Planning activity is accelerating with a velocity of 1.15, though the current amenity density remains low with only one cafe recorded.",
+    "caveat": "The model-predicted price may be skewed by broader borough-wide data that does not account for the specific lack of local amenities in this immediate hexagon.",
+    "model": "gemini-3.1-flash-lite"
+  },
+  "88194ad227fffff": {
+    "headline": "Lewisham property significantly undervalued relative to predictive market signals",
+    "brief": "With a median sale price of £402,500 against a predicted value of £729,090, this area shows a substantial negative valuation gap of 44.8%. Planning activity remains steady with 114 applications over five years, though the low density of local amenities suggests limited commercial development.",
+    "caveat": "The model may overstate value if the predictive signals do not adequately account for the specific local constraints or lack of infrastructure in this immediate hexagon.",
+    "model": "gemini-3.1-flash-lite"
+  },
+  "88194ad1d7fffff": {
+    "headline": "Croydon property significantly undervalued relative to local planning and location signals",
+    "brief": "With a median sale price of £450,000 against a model-implied value of £810,466, this area shows a substantial negative valuation gap. Planning activity has slowed to 58% of its historical velocity, suggesting a cooling development pipeline despite the proximity to central London.",
+    "caveat": "The model-implied price may be skewed by broader borough-wide data that does not account for the specific hyper-local constraints of this hexagon.",
+    "model": "gemini-3.1-flash-lite"
+  },
+  "88194ada37fffff": {
+    "headline": "Wandsworth property significantly undervalued relative to predictive market signals",
+    "brief": "The area shows a substantial valuation gap of -44.1%, with actual median sale prices trailing significantly behind the model-predicted value of £1.29 million. Planning activity remains steady but moderate, with a velocity of 0.90 and no change-of-use applications recorded in the last five years.",
+    "caveat": "The absence of local cafes and amenities may suppress market demand, potentially explaining why the area trades below its model-predicted valuation.",
+    "model": "gemini-3.1-flash-lite"
+  },
+  "88194e6d1dfffff": {
+    "headline": "Bexley property values significantly trail model-predicted price benchmarks",
+    "brief": "The current median sale price of £450,000 sits 43.4% below the model-implied valuation of £795,331. Planning activity is currently decelerating, with a velocity of 0.61 and no change-of-use applications recorded in the area.",
+    "caveat": "The model may be overestimating value by failing to account for the lack of local amenities such as cafes and the specific distance from central London.",
+    "model": "gemini-3.1-flash-lite"
+  },
+  "88194e61e1fffff": {
+    "headline": "Havering property significantly undervalued relative to local planning and amenity signals",
+    "brief": "With a valuation gap of -43.4%, this area is priced well below its predicted market value. While planning velocity has slowed to 0.68, the presence of 12 independent cafes suggests a stable local character despite the lower price point.",
+    "caveat": "The valuation gap may reflect specific local constraints or environmental factors not captured by the aggregate planning and amenity data.",
+    "model": "gemini-3.1-flash-lite"
+  },
+  "88194ad031fffff": {
+    "headline": "Lewisham property values significantly trail model-predicted price benchmarks",
+    "brief": "With a median sale price of £400,000, this area is currently valued 43.2% below its model-implied price of £704,335. Planning activity remains steady with 282 applications over five years, though the recent velocity of 0.91 suggests a slight cooling in development momentum.",
+    "caveat": "The significant valuation gap may reflect localized factors or data discrepancies not fully captured by the broader predictive model.",
+    "model": "gemini-3.1-flash-lite"
+  },
+  "88195da4abfffff": {
+    "headline": "Westminster property significantly undervalued relative to predictive market signals",
+    "brief": "With a median sale price of £988,750, this area is trading at a 43.2% discount compared to its signal-implied valuation of over £1.7 million. Planning activity remains steady with a velocity of 1.04 and minimal change-of-use applications, suggesting a stable development environment.",
+    "caveat": "The significant valuation gap may reflect localized market factors or property characteristics not fully captured by the predictive model.",
+    "model": "gemini-3.1-flash-lite"
+  },
+  "88194ad0b5fffff": {
+    "headline": "Croydon property significantly undervalued relative to predictive market signals",
+    "brief": "The area shows a substantial valuation gap of 43%, with actual median prices trailing the model's prediction of £920,896. Planning activity has slowed to 70% of historical velocity, and the lack of local cafe infrastructure suggests limited current commercial development.",
+    "caveat": "The model may overestimate value if the specific hexagon lacks the connectivity or amenities typically associated with higher-priced London locations.",
+    "model": "gemini-3.1-flash-lite"
+  },
+  "88194ac261fffff": {
+    "headline": "Croydon property significantly undervalued relative to predictive market signals",
+    "brief": "The area shows a substantial valuation gap of 42.9%, with current median sale prices trailing significantly behind model-predicted values. Planning activity is currently decelerating, with a velocity of 0.87 and a limited concentration of local amenities.",
+    "caveat": "The valuation gap may be skewed by the low density of local amenities and the recent slowdown in planning application volume.",
+    "model": "gemini-3.1-flash-lite"
+  },
+  "88195dacb5fffff": {
+    "headline": "Hillingdon property significantly undervalued relative to predictive market signals",
+    "brief": "With a median sale price of £455,000 against a model-predicted £795,249, this area shows a substantial negative valuation gap of 42.8%. Planning activity is accelerating slightly with a velocity of 1.12, though development remains focused on standard applications rather than change-of-use projects.",
+    "caveat": "The lack of local amenities such as cafes may suppress market demand regardless of the statistical valuation gap.",
+    "model": "gemini-3.1-flash-lite"
+  },
+  "88194ad011fffff": {
+    "headline": "Lewisham property significantly undervalued relative to predictive market signals",
+    "brief": "With a median sale price of £340,000, this area is trading at a 41.9% discount compared to its signal-implied valuation of £585,456. Planning activity remains steady but slightly below historical trends, with 160 applications over five years and a low density of local amenities.",
+    "caveat": "The significant valuation gap may reflect localized factors or data limitations not captured by the broader predictive model.",
+    "model": "gemini-3.1-flash-lite"
+  },
+  "88195d36edfffff": {
+    "headline": "Hounslow property significantly undervalued relative to predictive market signals",
+    "brief": "The area shows a substantial valuation gap of 41.8%, with actual sale prices trailing behind model-predicted values. Planning activity remains steady but modest, with a velocity of 0.84 and no change-of-use applications, suggesting limited immediate structural transformation.",
+    "caveat": "The absence of local amenities such as cafes may suppress demand, potentially explaining why the market price remains below the model's predicted valuation.",
+    "model": "gemini-3.1-flash-lite"
+  },
+  "88195dacabfffff": {
+    "headline": "Hillingdon property significantly undervalued relative to predictive market signals",
+    "brief": "With a median sale price of £359,000, this area is priced 41.6% below its model-implied valuation of £614,905. Planning activity remains steady with 59 applications in the last year, though the lack of local cafe amenities suggests limited commercial development.",
+    "caveat": "The valuation gap may be skewed by the absence of local amenities or specific site constraints not captured by the predictive model.",
+    "model": "gemini-3.1-flash-lite"
+  },
+  "88194e6f47fffff": {
+    "headline": "Barking and Dagenham property significantly undervalued relative to predictive signals",
+    "brief": "The area shows a substantial negative valuation gap of 41.3%, with actual median prices trailing the model's predicted value of £596,509. Planning activity remains steady but modest, with a velocity of 0.91 and limited change-of-use applications, suggesting a stable rather than rapidly transforming development landscape.",
+    "caveat": "The model may overstate value if it relies on regional growth trends that do not account for the specific local economic constraints of this 19.6 km distance from central London.",
+    "model": "gemini-3.1-flash-lite"
+  },
+  "88194ad243fffff": {
+    "headline": "Newham property values significantly trail model-predicted price benchmarks",
+    "brief": "Newham exhibits a substantial valuation gap of 40.6%, with actual sale prices sitting well below model-predicted levels. Planning activity remains steady with 270 applications over five years, while the local economy shows a high concentration of independent cafes.",
+    "caveat": "The model-predicted price may not fully account for specific hyper-local infrastructure or demographic factors unique to this 10.5km radius from central London.",
+    "model": "gemini-3.1-flash-lite"
+  }
+}
