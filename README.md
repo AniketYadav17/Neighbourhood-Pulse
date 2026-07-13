@@ -6,10 +6,11 @@ Registry prices to surface *candidate undervalued* neighbourhoods before price
 growth appears.
 
 [![CI](https://github.com/AniketYadav17/Neighbourhood-Pulse/actions/workflows/ci.yml/badge.svg)](https://github.com/AniketYadav17/Neighbourhood-Pulse/actions/workflows/ci.yml)
+[![Live app](https://img.shields.io/badge/Live-Streamlit%20Cloud-FF4B4B)](https://neighbourhood-pulse.streamlit.app)
 ![Python](https://img.shields.io/badge/Python-3.10+-blue)
 ![License](https://img.shields.io/badge/License-GPL--3.0-blue)
 
-**Live app:** *deploy link added in the deploy task* · **API docs:** `docker compose up` → http://localhost:8000/docs
+**Live app:** https://neighbourhood-pulse.streamlit.app · **API docs:** `docker compose up` → http://localhost:8000/docs
 
 ![Neighbourhood Pulse — Explore](docs/images/app_hero.png)
 
