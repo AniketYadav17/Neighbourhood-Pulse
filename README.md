@@ -1,29 +1,35 @@
 # Neighbourhood Pulse
 
-**A gentrification predictor for London** — planning applications, change-of-use
-conversions, and independent-café density, modelled per H3 hexagon against Land
-Registry prices to surface *candidate undervalued* neighbourhoods before price
-growth appears.
+**Finding London neighbourhoods that may be about to rise in value.** The
+project reads three early signs of change for every small area of London
+(planning applications, buildings converted to new uses, and independent
+cafés), models what homes there should cost, and flags areas selling well
+below that estimate.
 
-[![CI](https://github.com/AniketYadav17/Neighbourhood-Pulse/actions/workflows/ci.yml/badge.svg)](https://github.com/AniketYadav17/Neighbourhood-Pulse/actions/workflows/ci.yml)
 [![Live app](https://img.shields.io/badge/Live-Streamlit%20Cloud-FF4B4B)](https://neighbourhood-pulse.streamlit.app)
+[![CI](https://github.com/AniketYadav17/Neighbourhood-Pulse/actions/workflows/ci.yml/badge.svg)](https://github.com/AniketYadav17/Neighbourhood-Pulse/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/Python-3.10+-blue)
 ![License](https://img.shields.io/badge/License-GPL--3.0-blue)
 
-**Live app:** https://neighbourhood-pulse.streamlit.app · **API docs:** `docker compose up` → http://localhost:8000/docs
+**Live app:** https://neighbourhood-pulse.streamlit.app
 
 ![Neighbourhood Pulse — Explore](docs/images/app_hero.png)
 
 ## What it does
 
-1. Ingests ~350k planning applications (all 33 boroughs) and ~6,600 cafés.
-2. Engineers per-hexagon signals with a per-borough reporting-lag correction.
-3. Trains XGBoost on `log(median sale price)` (held-out R² ≈ 0.44) and computes
-   an **out-of-fold valuation gap** — actual price vs signal-implied price.
-4. Back-tests the thesis: hexagons flagged undervalued early (2021–22) grew
-   **monotonically more** (+7.3% → −1.5% across gap quintiles into 2024–25).
-5. Serves it: an interactive hexagon map with per-neighbourhood LLM briefs and
-   a live what-if repricing panel.
+1. Collects about 350,000 planning applications (all 33 London boroughs) and
+   about 6,600 café locations.
+2. Turns them into per-area signals on a hexagon grid, correcting for how
+   slowly each borough reports its data.
+3. Trains an XGBoost model to estimate each area's typical sale price from
+   those signals. The model explains about 44% of price variation on data it
+   never trained on (R² ≈ 0.44). The **valuation gap** is the actual price
+   versus that estimate, always scored by a model that never saw the area.
+4. Checks the idea against history: areas the model called underpriced in
+   2021–22 grew more by 2024–25, consistently across the range (+7.3% for the
+   most underpriced fifth vs −1.5% for the most overpriced).
+5. Serves it all as an interactive map with short AI-written briefs and a
+   live "what if this area changed?" repricing tool.
 
 ## Architecture
 
@@ -37,9 +43,9 @@ flowchart LR
     API -.->|compose only| APP
 ```
 
-Batch pipeline → four committed serving artifacts → two thin consumers.
-Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · design rationale:
-[docs/DECISIONS.md](docs/DECISIONS.md).
+A batch pipeline writes four committed artifacts; two thin consumers (the app
+and an API) read them. Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) ·
+design rationale: [docs/DECISIONS.md](docs/DECISIONS.md).
 
 ## Quickstart
 
@@ -53,22 +59,20 @@ streamlit run app/app.py
 
 # Or rebuild everything from raw data (hours; network; ~1 GB Land Registry CSVs):
 pulse ingest && pulse transform && pulse train
-
-# API + app together (what-if panel round-trips through POST /predict):
-docker compose up --build      # api :8000 (/docs), app :8501
 ```
 
-`pytest` (92 tests, no network) and `ruff check .` run in CI on every push,
-including a parity gate that pins the pipeline's output to the validated
-research results and a Docker build of the serving image.
+`pytest` (no network needed) and `ruff check .` run in CI on every push. CI
+also pins the pipeline's output to the validated research results and builds
+the serving Docker image.
 
 ## API
 
-With `docker compose up` running (interactive OpenAPI docs at http://localhost:8000/docs):
+`docker compose up --build` starts the FastAPI service on port 8000
+(interactive docs at http://localhost:8000/docs) alongside the app on 8501.
 
 ```bash
 curl "localhost:8000/hexagons?borough=Hackney&max_gap=-0.2"   # undervalued Hackney hexagons
-curl "localhost:8000/hexagons/<h3_index>"                     # signals + prices + LLM brief
+curl "localhost:8000/hexagons/<h3_index>"                     # signals + prices + AI brief
 curl -X POST localhost:8000/predict -H "content-type: application/json" \
      -d '{"total_applications": 120, "change_of_use_count": 12, "applications_recent": 30,
           "change_of_use_ratio": 0.1, "planning_velocity": 1.2, "total_cafe_count": 4,
@@ -79,25 +83,31 @@ curl -X POST localhost:8000/predict -H "content-type: application/json" \
 
 | Metric | Value |
 |---|---|
-| Held-out R² (XGBoost, log price) | 0.439 |
-| Held-out R² (linear baseline) | 0.418 |
-| Modelled hexagons (≥30 pooled sales) | 1,694 |
+| R² on unseen areas (XGBoost, log price) | 0.439 |
+| R² linear baseline | 0.418 |
+| Modelled areas (≥30 pooled sales) | 1,694 |
 | Back-test gap→growth correlation | −0.249 |
-| Growth spread, most- vs least-undervalued quintile | +7.3% vs −1.5% |
+| Growth spread, most- vs least-underpriced fifth | +7.3% vs −1.5% |
 
-Top predictor after controlling for centrality: **change-of-use ratio** — the
-"shops becoming cafés/flats" signal.
+The strongest predictor, after accounting for how central an area is, is the
+share of planning applications that change a building's use — the "shops
+becoming cafés or flats" signal.
 
-## Honest limitations
+## What this can and cannot tell you
 
-- One distance-to-centre feature can't fully model London's polycentric price
-  surface — some outer-borough "undervaluation" is residual location effect.
-  The gap is a candidate signal, not investment advice.
-- The back-test is proof-of-concept: features aren't strictly frozen as of
-  2021, and 2-year sale windows are thin at hexagon level.
-- Coverage is ~66% of London hexagons (planning activity + sales floor).
-- Future work: PostGIS + scheduled ingestion, drift monitoring, retraining
-  cadence, geocoding coverage 66%→95%.
+- **It is a research signal, not investment advice.** A large gap says "the
+  model expected this area to cost more". That can mean opportunity, or it
+  can mean the model is missing something about that area.
+- **Location is only partly accounted for.** The model uses one
+  distance-from-centre measure, but London has many centres. Some outer areas
+  look underpriced partly because of where they are.
+- **The back-test is indicative, not proof.** The signals were not strictly
+  frozen at 2021, and two-year windows of sales are thin at this map scale.
+- **Coverage is about two thirds of London.** An area needs planning activity
+  and at least 30 home sales in 2021–2025 to be modelled.
+
+Planned next: scheduled data refreshes with PostGIS, drift monitoring, a
+retraining cadence, and better address matching (66% → 95% coverage).
 
 ## Data sources
 
