@@ -111,6 +111,15 @@ def test_prompt_is_grounded_in_the_row():
     assert "Newham" in prompt
     assert "£400,000" in prompt
     assert "-50.0%" in prompt
+    assert "Model's estimated price" in prompt
+    assert "Signal-implied" not in prompt
+
+
+def test_system_prompt_uses_honest_estimate_framing():
+    sp = briefs_module.SYSTEM_PROMPT
+    assert "model's estimate" in sp
+    assert "market rate" in sp  # named as banned phrasing
+    assert "not advice" in sp
 
 
 def test_generate_skips_cached_and_saves_each(tmp_path):
@@ -147,7 +156,7 @@ def test_request_shape_pins_grounding_controls():
     kwargs = client.calls[0]
     assert kwargs["model"] == "gemini-3.1-flash-lite"
     assert kwargs["config"]["temperature"] == 0.2
-    assert "ONLY the signals" in kwargs["config"]["system_instruction"]
+    assert "ONLY the facts" in kwargs["config"]["system_instruction"]
     assert kwargs["config"]["response_mime_type"] == "application/json"
     schema = kwargs["config"]["response_schema"]
     # Gemini's Schema proto rejects "additionalProperties" outright (400

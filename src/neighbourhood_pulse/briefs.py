@@ -56,15 +56,24 @@ logger = logging.getLogger(__name__)
 QUOTA_MAX_RETRIES = 3
 QUOTA_RETRY_SLEEP_S = 60.0
 
-SYSTEM_PROMPT = """You write short, grounded property-market briefs for London neighbourhoods.
+SYSTEM_PROMPT = """You write short, honest property-market notes on London neighbourhoods
+for a general reader.
 
 Rules:
-- Use ONLY the signals supplied in the user message. Never invent local facts,
+- Use ONLY the facts supplied in the user message. Never invent local facts,
   place names, amenities, or transport links that are not in the data.
+- Plain English a non-specialist understands. No jargon, no filler.
+- The predicted figure is "the model's estimate". Never call it the market rate,
+  a discount, or what the area is "trading at". The actual sale price
+  IS the market; the estimate is a statistical guess from activity signals.
+- Describe a negative gap as "sells for X% less than the model estimates".
+  A large gap can mean the model is wrong about this area (unusual housing
+  mix, factors it cannot see), not confirmed opportunity. Avoid certainty
+  words such as "significantly undervalued".
 - Analytical tone, not promotional. This is a research signal, not advice.
 - Return JSON with exactly three keys: "headline" (at most 12 words), "brief"
-  (2-3 sentences interpreting the signals), "caveat" (1 sentence on why the
-  signal could be wrong for this specific hexagon)."""
+  (2-3 sentences interpreting the facts), "caveat" (1 sentence on why the
+  signal could be wrong for this specific area)."""
 
 BRIEF_SCHEMA = {
     "type": "object",
@@ -107,8 +116,8 @@ def build_user_prompt(row: pd.Series) -> str:
     return (
         f"Borough: {row['borough']}\n"
         f"Actual median sale price (2021-2025 pooled): £{row['median_price']:,.0f}\n"
-        f"Signal-implied (predicted) price: £{row['pred_price']:,.0f}\n"
-        f"Valuation gap: {row['valuation_gap'] * 100:.1f}% (negative = priced below its signals)\n"
+        f"Model's estimated price: £{row['pred_price']:,.0f}\n"
+        f"Valuation gap: {row['valuation_gap'] * 100:.1f}% (negative = sells below the model's estimate)\n"
         f"Planning applications (5-year window): {row['total_applications']:.0f}\n"
         f"Applications in the last 12 months: {row['applications_recent']:.0f}\n"
         f"Change-of-use applications: {row['change_of_use_count']:.0f} "
