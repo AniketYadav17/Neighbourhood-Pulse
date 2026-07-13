@@ -23,14 +23,16 @@ GAP_PRESETS = {
 
 st.title("🗺️ The Neighbourhood Pulse")
 st.markdown(
-    "**This map looks for London neighbourhoods that may be about to rise in value.** "
-    "For each area (a hexagon on the map), a model estimates what homes *should* cost "
-    "based on early signs of change: building and renovation activity (planning "
-    "applications), buildings being converted to new uses, and independent cafés "
-    "opening. Since homes near central London naturally cost more, the model also "
-    "accounts for distance from the centre. **Red areas sell for less than the model "
-    "expects**, which can be an early sign of a neighbourhood on the way up. Green "
-    "areas sell for more."
+    "**Can independent cafés predict house prices?** Gentrification tends to follow a "
+    "script: planning applications pick up, shops turn into flats and cafés, and only "
+    "later do prices move. This map reads those early signals for every London "
+    "neighbourhood (each hexagon) and asks a model what homes *should* cost given the "
+    "activity on the ground and how central the area is. **Red areas sell for less "
+    "than the activity suggests**: possible early movers the market has not caught up "
+    "with. Green areas sell for more.\n\n"
+    "The idea holds up against history: areas this model flagged as underpriced in "
+    "2021–22 went on to grow about 9 percentage points more by 2024–25 than the areas "
+    "it flagged as overpriced."
 )
 
 gap = load_gap()

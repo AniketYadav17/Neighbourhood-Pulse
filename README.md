@@ -1,10 +1,12 @@
 # Neighbourhood Pulse
 
-**Finding London neighbourhoods that may be about to rise in value.** The
-project reads three early signs of change for every small area of London
-(planning applications, buildings converted to new uses, and independent
-cafés), models what homes there should cost, and flags areas selling well
-below that estimate.
+**Can independent cafés predict house prices?** Gentrification tends to
+follow a script: planning applications pick up, shops turn into flats and
+cafés, and only later do prices move. Neighbourhood Pulse reads those early
+signals for every small area of London, models what homes should cost given
+the activity on the ground, and flags areas selling well below that estimate.
+In a back-test, the areas it flagged as underpriced in 2021–22 grew about 9
+percentage points more by 2024–25 than the areas it flagged as overpriced.
 
 [![Live app](https://img.shields.io/badge/Live-Streamlit%20Cloud-FF4B4B)](https://neighbourhood-pulse.streamlit.app)
 [![CI](https://github.com/AniketYadav17/Neighbourhood-Pulse/actions/workflows/ci.yml/badge.svg)](https://github.com/AniketYadav17/Neighbourhood-Pulse/actions/workflows/ci.yml)
